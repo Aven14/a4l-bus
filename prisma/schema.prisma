@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ticket {
+  id         String   @id @default(cuid())
+  firstname  String
+  lastname   String
+  ticketType String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([firstname, lastname])
+  @@index([expiresAt])
+}
+
+model TransportLine {
+  id        String   @id @default(cuid())
+  number    Int      @unique
+  name      String
+  color     String   @default("#E63946")
+  createdAt DateTime @default(now())
+  stops     Stop[]
+}
+
+model Stop {
+  id       String        @id @default(cuid())
+  name     String
+  slug     String
+  audioUrl String
+  order    Int           @default(0)
+  lineId   String
+  line     TransportLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+
+  @@unique([lineId, slug])
+}

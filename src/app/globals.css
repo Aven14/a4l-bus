@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-navy-950: #0a0e1a;
+  --color-navy-900: #0f1629;
+  --color-navy-800: #151d35;
+  --color-navy-700: #1c2744;
+  --color-accent: #e63946;
+  --color-accent-glow: #ff4d5a;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-navy-950);
+  color: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Animated transport background */
+.transport-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0a0e1a 0%, #151d35 40%, #0f1629 100%);
+}
+
+.transport-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(230, 57, 70, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 57, 70, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: grid-drift 30s linear infinite;
+}
+
+.transport-bg::after {
+  content: "";
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(230, 57, 70, 0.12) 0%, transparent 70%);
+  top: -200px;
+  right: -100px;
+  animation: pulse-glow 8s ease-in-out infinite;
+}
+
+@keyframes grid-drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(48px, 48px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Moving lines (metro effect) */
+.metro-line {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(230, 57, 70, 0.4), transparent);
+  animation: metro-scan 6s linear infinite;
+}
+
+.metro-line-1 { top: 20%; width: 40%; left: -40%; animation-delay: 0s; }
+.metro-line-2 { top: 50%; width: 60%; left: -60%; animation-delay: 2s; }
+.metro-line-3 { top: 75%; width: 35%; left: -35%; animation-delay: 4s; }
+
+@keyframes metro-scan {
+  0% { transform: translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(250vw); opacity: 0; }
+}
+
+.glass-card {
+  background: rgba(21, 29, 53, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card-accent {
+  border-color: rgba(230, 57, 70, 0.25);
+  box-shadow: 0 0 24px rgba(230, 57, 70, 0.08);
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-semibold text-white transition-all duration-200;
+  background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+  box-shadow: 0 4px 14px rgba(230, 57, 70, 0.35);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.45);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 font-medium text-white transition-all duration-200 hover:bg-white/10;
+}
+
+.input-field {
+  @apply w-full rounded-lg border border-white/10 bg-navy-900/80 px-4 py-2.5 text-white placeholder:text-slate-500 outline-none transition focus:border-accent/50 focus:ring-2 focus:ring-accent/20;
+}
+
+/* Audio bars animation */
+@keyframes audio-bar {
+  0%, 100% { height: 20%; }
+  50% { height: 100%; }
+}
+
+.audio-bar {
+  animation: audio-bar 0.6s ease-in-out infinite;
+}
+
+.audio-bar:nth-child(2) { animation-delay: 0.1s; }
+.audio-bar:nth-child(3) { animation-delay: 0.2s; }
+.audio-bar:nth-child(4) { animation-delay: 0.3s; }
+.audio-bar:nth-child(5) { animation-delay: 0.15s; }
+
+/* Announcement overlay pulse */
+@keyframes announce-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(230, 57, 70, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(230, 57, 70, 0.6); }
+}
+
+.announce-active {
+  animation: announce-pulse 1.5s ease-in-out infinite;
+}
+
+/* Page transition */
+.page-enter {
+  animation: fade-up 0.4s ease-out;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0e1a; }
+::-webkit-scrollbar-thumb { background: #1c2744; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #e63946; }
