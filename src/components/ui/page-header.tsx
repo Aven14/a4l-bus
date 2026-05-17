@@ -6,9 +6,9 @@ export function PageHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="mb-8 border-b-2 border-track pb-6">
-      <p className="label-caps mb-2">Cross Track Bus</p>
-      <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-track md:text-4xl">
+    <div className="mb-8 border-b border-line pb-6">
+      <p className="label-caps mb-1 text-primary">Cross Track Bus</p>
+      <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
         {title}
       </h1>
       {subtitle && (

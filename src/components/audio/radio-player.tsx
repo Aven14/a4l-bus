@@ -15,16 +15,17 @@ export function RadioPlayer() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 border-t-2 border-track bg-surface ${
-        isAnnouncing ? "announce-blink" : ""
+      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-surface/95 shadow-[0_-4px_24px_rgba(29,78,216,0.08)] backdrop-blur-md ${
+        isAnnouncing ? "announce-blink border-accent/30" : ""
       }`}
     >
+      <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-accent" />
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
         <button
           type="button"
           onClick={togglePlay}
           disabled={isAnnouncing}
-          className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-track bg-track text-surface transition hover:bg-surface hover:text-track disabled:opacity-40"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:bg-primary-dark disabled:opacity-40"
           aria-label={isPlaying ? "Pause" : "Lecture"}
         >
           {isPlaying ? (
@@ -39,25 +40,22 @@ export function RadioPlayer() {
         </button>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-sm font-bold uppercase tracking-wide text-track">
+          <p className="truncate text-sm font-semibold text-ink">
             {currentTrackTitle}
           </p>
-          <p className="label-caps mt-0.5">Cross Track Bus Radio</p>
+          <p className="text-xs text-muted">Cross Track Bus Radio</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="label-caps hidden sm:inline">Vol</span>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={volume}
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
-            className="h-1 w-24 cursor-pointer accent-track md:w-32"
-            aria-label="Volume"
-          />
-        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={volume}
+          onChange={(e) => setVolume(parseFloat(e.target.value))}
+          className="h-1 w-24 cursor-pointer accent-primary md:w-32"
+          aria-label="Volume"
+        />
 
         <button
           type="button"

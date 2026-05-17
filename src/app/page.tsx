@@ -3,123 +3,130 @@ import { TRANSPORT_LINES } from "@/lib/transport-data";
 
 const services = [
   {
-    num: "01",
     title: "Radio & annonces",
-    desc: "Diffusion continue et messages arrêt avec signal sonore.",
+    desc: "Musique en continu et messages arrêt avec signal sonore.",
     href: "/driver",
+    color: "from-primary/10 to-primary/5",
+    icon: (
+      <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+      </svg>
+    ),
   },
   {
-    num: "02",
     title: "Billets",
-    desc: "Émission trajet unique, journée ou semaine.",
+    desc: "Émission trajet unique, pass journée ou semaine.",
     href: "/tickets",
+    color: "from-accent-light to-white",
+    icon: (
+      <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+      </svg>
+    ),
   },
   {
-    num: "03",
     title: "Contrôle",
-    desc: "Vérification passager par nom et prénom.",
+    desc: "Vérification instantanée des titres de transport.",
     href: "/controller",
+    color: "from-primary-light/80 to-white",
+    icon: (
+      <svg className="h-6 w-6 text-primary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
   },
 ];
 
 export default function HomePage() {
   return (
     <div className="page-enter mx-auto max-w-6xl px-4">
-      <section className="mb-14 grid gap-8 border-b-2 border-track pb-14 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-        <div>
-          <p className="label-caps mb-4">Compagnie de transport · Altis RP</p>
-          <h1 className="font-display text-[clamp(2.75rem,8vw,5.5rem)] font-extrabold uppercase leading-[0.92] tracking-tight text-track">
-            Cross
-            <br />
-            Track
-            <br />
-            Bus
-          </h1>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-muted">
-            Interface conducteur et contrôleur pour le réseau bus du serveur.
-            Radio, annonces sonores et titres de transport centralisés.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/driver" className="btn-primary">
-              Panneau conducteur
-            </Link>
-            <Link href="/tickets" className="btn-secondary">
-              Émettre un billet
-            </Link>
-          </div>
-        </div>
+      <section className="panel-highlight relative mb-12 overflow-hidden p-8 md:p-12">
+        <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
 
-        <div className="panel p-6">
-          <p className="label-caps mb-3">État du réseau</p>
-          <p className="font-display text-5xl font-extrabold text-track">
-            {TRANSPORT_LINES.length}
-          </p>
-          <p className="text-sm text-muted">lignes en service</p>
-          <div className="mt-6 space-y-2 border-t border-line pt-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted">Zone</span>
-              <span className="font-medium">Altis — RP</span>
+        <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
+              <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+              Réseau actif · Altis RP
+            </span>
+            <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight text-ink md:text-5xl lg:text-6xl">
+              Cross Track{" "}
+              <span className="text-gradient-brand">Bus</span>
+            </h1>
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
+              Portail conducteur et contrôleur : radio, annonces sonores et
+              gestion des titres de transport pour votre serveur Arma 3.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/driver" className="btn-primary">
+                Panneau conducteur
+              </Link>
+              <Link href="/tickets" className="btn-secondary">
+                Émettre un billet
+              </Link>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted">Statut</span>
-              <span className="font-display text-xs font-bold uppercase tracking-widest text-track">
-                Opérationnel
-              </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-primary p-5 text-white shadow-lg shadow-primary/25">
+              <p className="text-4xl font-extrabold">{TRANSPORT_LINES.length}</p>
+              <p className="mt-1 text-sm text-white/80">lignes</p>
+            </div>
+            <div className="rounded-2xl border border-line bg-surface p-5">
+              <p className="text-4xl font-extrabold text-primary">24/7</p>
+              <p className="mt-1 text-sm text-muted">service RP</p>
+            </div>
+            <div className="col-span-2 rounded-2xl border border-red-100 bg-accent-light/50 p-5">
+              <p className="text-sm font-semibold text-accent">Annonces live</p>
+              <p className="mt-1 text-xs text-muted">
+                Chime + message arrêt avec fondu radio automatique
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mb-14">
-        <div className="mb-6 flex items-baseline justify-between gap-4 border-b border-line pb-3">
-          <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-track">
-            Services
-          </h2>
-          <span className="label-caps">Accès rapide</span>
-        </div>
+      <section className="mb-12">
+        <h2 className="mb-6 text-xl font-bold text-ink">Services</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {services.map((s) => (
             <Link
               key={s.href}
               href={s.href}
-              className="panel group block p-5 transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_var(--color-track)]"
+              className={`panel-soft group block bg-gradient-to-br p-6 ${s.color}`}
             >
-              <span className="font-display text-3xl font-extrabold text-line group-hover:text-track">
-                {s.num}
-              </span>
-              <h3 className="mt-3 font-display text-lg font-bold uppercase text-track">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-surface shadow-sm">
+                {s.icon}
+              </div>
+              <h3 className="font-bold text-ink group-hover:text-primary transition-colors">
                 {s.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{s.desc}</p>
+              <p className="mt-2 text-sm text-muted">{s.desc}</p>
             </Link>
           ))}
         </div>
       </section>
 
       <section>
-        <div className="mb-6 flex items-baseline justify-between gap-4 border-b border-line pb-3">
-          <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-track">
-            Lignes
-          </h2>
-          <span className="label-caps">{TRANSPORT_LINES.length} circuits</span>
-        </div>
+        <h2 className="mb-6 text-xl font-bold text-ink">
+          Lignes du réseau
+        </h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {TRANSPORT_LINES.map((line) => (
             <div
               key={line.number}
-              className="panel-soft flex items-stretch overflow-hidden"
+              className="panel-soft flex items-center gap-4 p-4"
             >
               <div
-                className="flex w-14 shrink-0 items-center justify-center font-display text-2xl font-extrabold text-surface"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-white shadow-md"
                 style={{ backgroundColor: line.color }}
               >
                 {line.number}
               </div>
-              <div className="flex flex-1 flex-col justify-center px-4 py-3">
-                <p className="font-display text-sm font-bold uppercase text-track">
-                  {line.name}
-                </p>
-                <p className="text-xs text-muted">{line.stops.length} arrêts</p>
+              <div>
+                <p className="font-semibold text-ink">{line.name}</p>
+                <p className="text-sm text-muted">{line.stops.length} arrêts</p>
               </div>
             </div>
           ))}

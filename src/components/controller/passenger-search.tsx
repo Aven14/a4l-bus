@@ -47,7 +47,7 @@ export function PassengerSearch() {
       {result && (
         <div className="panel p-6">
           <div className="mb-4 flex items-center justify-between border-b border-line pb-4">
-            <h3 className="font-display text-lg font-bold uppercase text-track">
+            <h3 className="text-lg font-bold text-ink">
               Résultat
             </h3>
             <StatusBadge status={result.status} />
@@ -57,7 +57,7 @@ export function PassengerSearch() {
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between border-b border-line pb-2">
                 <dt className="label-caps">Passager</dt>
-                <dd className="font-medium text-track">
+                <dd className="font-medium text-primary">
                   {result.ticket.firstname} {result.ticket.lastname}
                 </dd>
               </div>

@@ -78,7 +78,7 @@ export function TicketForm() {
         </div>
 
         {error && (
-          <p className="border-2 border-signal bg-canvas px-3 py-2 text-sm text-signal">
+          <p className="border-2 border-accent bg-canvas px-3 py-2 text-sm text-accent">
             {error}
           </p>
         )}
@@ -91,7 +91,7 @@ export function TicketForm() {
       {created && (
         <div className="panel-highlight mt-4 p-6">
           <p className="label-caps mb-2">Billet émis</p>
-          <p className="font-display text-xl font-bold uppercase text-track">
+          <p className="text-xl font-bold text-ink">
             {created.firstname} {created.lastname}
           </p>
           <p className="mt-1 text-muted">{created.ticketType}</p>

@@ -18,24 +18,22 @@ export function DriverPanel() {
   return (
     <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
       <div className="panel p-4">
-        <h2 className="label-caps mb-3">Lignes</h2>
-        <div className="space-y-1">
+        <h2 className="label-caps mb-3 text-primary">Lignes</h2>
+        <div className="space-y-2">
           {TRANSPORT_LINES.map((line) => (
             <button
               key={line.number}
               type="button"
               onClick={() => setSelectedLine(line)}
               className={cn(
-                "w-full border-2 px-3 py-2.5 text-left transition",
+                "w-full rounded-xl border px-4 py-3 text-left transition",
                 selectedLine?.number === line.number
-                  ? "border-track bg-track text-surface"
-                  : "border-line bg-surface text-track hover:border-track"
+                  ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
+                  : "border-line bg-surface text-ink hover:border-primary/40 hover:bg-primary-light/30"
               )}
             >
-              <span className="font-display text-lg font-extrabold">
-                L{line.number}
-              </span>
-              <span className="mt-0.5 block truncate text-xs text-muted">
+              <span className="text-lg font-bold">L{line.number}</span>
+              <span className="mt-0.5 block truncate text-xs opacity-80">
                 {line.name.replace(/^Ligne \d+ — /, "")}
               </span>
             </button>
@@ -43,19 +41,17 @@ export function DriverPanel() {
         </div>
       </div>
 
-      <div className="panel p-4">
+      <div className="panel p-5">
         {!selectedLine ? (
           <p className="py-16 text-center text-muted">
-            Sélectionnez une ligne
+            Sélectionnez une ligne pour afficher les arrêts
           </p>
         ) : (
           <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-4">
-              <h2 className="font-display text-lg font-bold uppercase text-track">
-                {selectedLine.name}
-              </h2>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-bold text-ink">{selectedLine.name}</h2>
               <span
-                className="font-display px-3 py-1 text-xs font-bold uppercase text-surface"
+                className="rounded-full px-3 py-1 text-xs font-bold text-white"
                 style={{ backgroundColor: selectedLine.color }}
               >
                 Ligne {selectedLine.number}
@@ -74,24 +70,22 @@ export function DriverPanel() {
                       `Ligne ${selectedLine.number} — ${stop.name}`
                     )
                   }
-                  className="group flex items-center gap-3 border-2 border-line bg-surface p-4 text-left transition hover:border-track hover:shadow-[3px_3px_0_var(--color-track)] disabled:opacity-40"
+                  className="group flex items-center gap-3 rounded-xl border border-line bg-canvas p-4 text-left transition hover:border-primary hover:bg-primary-light/40 disabled:opacity-40"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-track bg-canvas font-display text-xs font-bold text-track group-hover:bg-track group-hover:text-surface">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-sm text-white group-hover:bg-primary-dark">
                     ▶
                   </div>
                   <div>
-                    <p className="font-display text-sm font-bold uppercase text-track">
-                      {stop.name}
-                    </p>
-                    <p className="label-caps mt-0.5">Annoncer</p>
+                    <p className="font-semibold text-ink">{stop.name}</p>
+                    <p className="text-xs text-muted">Annoncer l&apos;arrêt</p>
                   </div>
                 </button>
               ))}
             </div>
 
             {lastTriggered && (
-              <p className="label-caps mt-4 border-t border-line pt-4 text-center">
-                Dernière : {lastTriggered}
+              <p className="mt-4 rounded-lg bg-accent-light px-3 py-2 text-center text-sm text-accent">
+                Dernière annonce : {lastTriggered}
               </p>
             )}
           </>

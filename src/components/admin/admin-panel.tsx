@@ -88,7 +88,7 @@ export function AdminPanel({
   if (!authed) {
     return (
       <form onSubmit={handleLogin} className="panel mx-auto max-w-sm p-8">
-        <h2 className="mb-4 text-xl font-bold text-track">Accès Admin</h2>
+        <h2 className="mb-4 text-xl font-bold text-primary">Accès Admin</h2>
         <input
           type="password"
           value={password}
@@ -120,7 +120,7 @@ export function AdminPanel({
 
       <section className="panel p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-bold text-track">Lignes & arrêts</h2>
+          <h2 className="text-lg font-bold text-primary">Lignes & arrêts</h2>
           <button
             type="button"
             className="btn-secondary text-sm"
@@ -227,12 +227,12 @@ export function AdminPanel({
           {lines.map((line) => (
             <div key={line.id} className="rounded-lg border border-line p-4">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-bold text-track">
+                <span className="font-bold text-primary">
                   L{line.number} — {line.name}
                 </span>
                 <button
                   type="button"
-                  className="text-xs text-signal hover:opacity-80"
+                  className="text-xs text-accent hover:opacity-80"
                   onClick={() =>
                     startTransition(async () => {
                       await deleteLine(line.id);
@@ -251,7 +251,7 @@ export function AdminPanel({
                     </span>
                     <button
                       type="button"
-                      className="text-signal hover:opacity-80"
+                      className="text-accent hover:opacity-80"
                       onClick={() =>
                         startTransition(async () => {
                           await deleteStop(stop.id);
@@ -270,7 +270,7 @@ export function AdminPanel({
       </section>
 
       <section className="panel p-6">
-        <h2 className="mb-4 text-lg font-bold text-track">Billets actifs</h2>
+        <h2 className="mb-4 text-lg font-bold text-primary">Billets actifs</h2>
         {tickets.length === 0 ? (
           <p className="text-muted">Aucun billet actif.</p>
         ) : (
@@ -287,7 +287,7 @@ export function AdminPanel({
               <tbody>
                 {tickets.map((t) => (
                   <tr key={t.id} className="border-b border-line">
-                    <td className="py-2 pr-4 text-track">
+                    <td className="py-2 pr-4 text-primary">
                       {t.firstname} {t.lastname}
                     </td>
                     <td className="py-2 pr-4">{t.ticketType}</td>
@@ -295,7 +295,7 @@ export function AdminPanel({
                     <td className="py-2 text-right">
                       <button
                         type="button"
-                        className="text-signal hover:opacity-80"
+                        className="text-accent hover:opacity-80"
                         onClick={() =>
                           startTransition(async () => {
                             await deleteTicket(t.id);
@@ -315,7 +315,7 @@ export function AdminPanel({
       </section>
 
       {message && (
-        <p className="text-center text-sm text-track">{message}</p>
+        <p className="text-center text-sm text-primary">{message}</p>
       )}
     </div>
   );
@@ -332,7 +332,7 @@ function StatCard({
 }) {
   return (
     <div className="panel p-4 text-center">
-      <p className={`text-2xl font-bold ${accent ? "text-track" : "text-ink"}`}>
+      <p className={`text-2xl font-bold ${accent ? "text-primary" : "text-ink"}`}>
         {value}
       </p>
       <p className="text-xs text-muted">{label}</p>
