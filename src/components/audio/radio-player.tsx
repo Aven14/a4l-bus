@@ -6,7 +6,6 @@ export function RadioPlayer() {
   const {
     isPlaying,
     volume,
-    currentTrackTitle,
     isAnnouncing,
     radioReady,
     togglePlay,
@@ -41,10 +40,10 @@ export function RadioPlayer() {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-ink">
-            {currentTrackTitle}
+            Radio/Annonce Cross Track Bus
           </p>
           <p className="text-xs text-muted">
-            Lecture aléatoire · synchronisée pour tous
+            Radio en direct disponible 24h/24
           </p>
         </div>
 
