@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { CHIME_PATH } from "@/lib/transport-data";
+import { playAudioFile } from "@/lib/play-audio";
 import { fetchRadioTracks } from "@/lib/radio-tracks";
 import {
   getSyncedPosition,
@@ -28,6 +29,7 @@ type AudioContextValue = {
   currentTrackTitle: string;
   isAnnouncing: boolean;
   announcementLabel: string | null;
+  announcementError: string | null;
   radioReady: boolean;
   togglePlay: () => void;
   setVolume: (v: number) => void;
@@ -76,12 +78,33 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTrackTitle, setCurrentTrackTitle] = useState("Cross Track Bus Radio");
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [announcementLabel, setAnnouncementLabel] = useState<string | null>(null);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
   const [radioReady, setRadioReady] = useState(false);
 
   const queueRef = useRef<AnnouncementItem[]>([]);
   const processingRef = useRef(false);
   const volumeRef = useRef(0.6);
   const isPlayingRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
+
+  /** Débloque la lecture audio (politique navigateur — doit être appelé au clic) */
+  const unlockAudio = useCallback(() => {
+    if (audioUnlockedRef.current) return;
+    audioUnlockedRef.current = true;
+    for (const el of [musicRef.current, chimeRef.current, announceRef.current]) {
+      if (!el) continue;
+      const vol = el.volume;
+      el.volume = 0.001;
+      void el
+        .play()
+        .then(() => {
+          el.pause();
+          el.currentTime = 0;
+          el.volume = el === musicRef.current ? volumeRef.current : vol;
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const loadPlaylist = useCallback(async () => {
     const config = await fetchRadioTracks();
@@ -98,7 +121,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const applySyncPosition = useCallback(async (play = false) => {
     const music = musicRef.current;
     const tracks = tracksRef.current;
-    if (!music || tracks.length === 0) return;
+    if (!music || tracks.length === 0 || processingRef.current) return;
 
     const { trackIndex: idx, offsetSeconds } = getSyncedPosition(tracks);
     const track = tracks[idx];
@@ -131,7 +154,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     musicRef.current = new Audio();
     musicRef.current.loop = false;
     chimeRef.current = new Audio(CHIME_PATH);
+    chimeRef.current.preload = "auto";
     announceRef.current = new Audio();
+    announceRef.current.preload = "auto";
     musicRef.current.volume = volume;
     volumeRef.current = volume;
 
@@ -158,7 +183,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       refreshTimer = setInterval(() => {
         void loadPlaylist().then((tracks) => {
-          if (tracks.length > 0 && isPlayingRef.current) {
+          if (tracks.length > 0 && isPlayingRef.current && !processingRef.current) {
             void applySyncPosition(true);
           }
         });
@@ -176,6 +201,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [applySyncPosition, loadPlaylist]);
 
   const togglePlay = useCallback(() => {
+    unlockAudio();
     const music = musicRef.current;
     if (!music || isAnnouncing || tracksRef.current.length === 0) return;
 
@@ -186,7 +212,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     } else {
       void applySyncPosition(true);
     }
-  }, [isAnnouncing, applySyncPosition]);
+  }, [isAnnouncing, applySyncPosition, unlockAudio]);
 
   const setVolume = useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
@@ -197,7 +223,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [isAnnouncing]);
 
-  const processQueue = useCallback(async () => {
+  const processQueue = useCallback(() => {
     if (processingRef.current || queueRef.current.length === 0) return;
     processingRef.current = true;
 
@@ -213,59 +239,102 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     setIsAnnouncing(true);
     setAnnouncementLabel(item.label);
+    setAnnouncementError(null);
 
     const wasPlaying = isPlayingRef.current;
     const savedVolume = volumeRef.current;
 
+    music.pause();
     if (wasPlaying) {
-      await fadeVolume(music, savedVolume, 0.05, FADE_MS);
-      music.pause();
+      void fadeVolume(music, savedVolume, 0.02, FADE_MS);
     }
 
-    try {
-      chime.currentTime = 0;
-      chime.volume = 0.9;
-      await chime.play();
-      await new Promise<void>((res) => {
-        chime.onended = () => res();
-        setTimeout(res, 2500);
-      });
-    } catch {
-      /* optional */
-    }
+    // Lecture déclenchée sans await avant .play() (sinon le navigateur bloque après le clic)
+    chime.src = CHIME_PATH;
+    chime.currentTime = 0;
+    chime.volume = 0.9;
+    announce.src = item.audioPath;
+    announce.load();
 
-    await new Promise((r) => setTimeout(r, CHIME_GAP_MS));
+    const chimePlay = chime.play();
 
-    try {
-      announce.src = item.audioPath;
-      announce.volume = 1;
-      await announce.play();
-      await new Promise<void>((res) => {
-        announce.onended = () => res();
-        setTimeout(res, 15000);
-      });
-    } catch {
-      /* optional */
-    }
+    void (async () => {
+      const chimeResult = await chimePlay
+        .then(() => ({ ok: true as const }))
+        .catch((err) => ({
+          ok: false as const,
+          error:
+            err instanceof Error
+              ? err.message
+              : "Lecture du signal refusée — cliquez sur la radio puis réessayez",
+        }));
 
-    if (wasPlaying) {
-      await applySyncPosition(true);
-      await fadeVolume(music, 0.05, savedVolume, FADE_MS);
-    }
+      if (!chimeResult.ok) {
+        // Signal optionnel : on continue quand même vers la voix
+        console.warn("Chime:", chimeResult.error);
+      } else {
+        await new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, 3000);
+          chime.onended = () => {
+            clearTimeout(timer);
+            resolve();
+          };
+          chime.onerror = () => {
+            clearTimeout(timer);
+            resolve();
+          };
+        });
+        await new Promise((r) => setTimeout(r, CHIME_GAP_MS));
+      }
 
-    setIsAnnouncing(false);
-    setAnnouncementLabel(null);
-    processingRef.current = false;
+      const announceResult = await playAudioFile(
+        announce,
+        item.audioPath,
+        1,
+        60_000
+      );
 
-    if (queueRef.current.length > 0) void processQueue();
+      if (!announceResult.ok) {
+        setAnnouncementError(
+          announceResult.error ??
+            `Impossible de lire ${item.audioPath}. Ajoutez le MP3 dans public/audio/.`
+        );
+      }
+
+      if (wasPlaying) {
+        await applySyncPosition(true);
+        if (musicRef.current) {
+          await fadeVolume(musicRef.current, 0.02, savedVolume, FADE_MS);
+        }
+      }
+
+      setIsAnnouncing(false);
+      setAnnouncementLabel(null);
+      processingRef.current = false;
+
+      if (queueRef.current.length > 0) processQueue();
+    })();
   }, [applySyncPosition]);
 
   const queueAnnouncement = useCallback(
     (audioPath: string, label: string) => {
+      unlockAudio();
+
+      const announce = announceRef.current;
+      const chime = chimeRef.current;
+      if (announce) {
+        announce.src = audioPath;
+        announce.load();
+      }
+      if (chime) {
+        chime.src = CHIME_PATH;
+        chime.load();
+      }
+
       queueRef.current.push({ audioPath, label });
-      void processQueue();
+      processQueue();
     },
-    [processQueue]
+    [processQueue, unlockAudio]
   );
 
   return (
@@ -276,6 +345,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         currentTrackTitle,
         isAnnouncing,
         announcementLabel,
+        announcementError,
         radioReady,
         togglePlay,
         setVolume,

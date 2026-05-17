@@ -3,7 +3,7 @@
 import { useAudio } from "@/contexts/audio-context";
 
 export function AnnouncementOverlay() {
-  const { isAnnouncing, announcementLabel } = useAudio();
+  const { isAnnouncing, announcementLabel, announcementError } = useAudio();
 
   if (!isAnnouncing) return null;
 
@@ -18,6 +18,9 @@ export function AnnouncementOverlay() {
         </h2>
         {announcementLabel && (
           <p className="mt-2 text-primary font-medium">{announcementLabel}</p>
+        )}
+        {announcementError && (
+          <p className="mt-3 text-sm text-accent">{announcementError}</p>
         )}
 
         <div className="mt-6 flex h-10 items-end justify-center gap-1">

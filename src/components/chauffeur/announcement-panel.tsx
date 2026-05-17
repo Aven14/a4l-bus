@@ -18,7 +18,7 @@ export function AnnouncementPanel({
   lineName: string;
   stops: Stop[];
 }) {
-  const { queueAnnouncement, isAnnouncing } = useAudio();
+  const { queueAnnouncement, isAnnouncing, announcementError } = useAudio();
 
   return (
     <div className="space-y-4">
@@ -49,6 +49,11 @@ export function AnnouncementPanel({
           </button>
         ))}
       </div>
+      {announcementError && (
+        <p className="rounded-lg bg-accent-light px-3 py-2 text-sm text-accent">
+          {announcementError}
+        </p>
+      )}
     </div>
   );
 }
