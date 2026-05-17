@@ -38,7 +38,7 @@ type AudioContextValue = {
 
 const AudioContext = createContext<AudioContextValue | null>(null);
 
-const FADE_MS = 800;
+const MUSIC_FADE_MS = 500;
 const CHIME_GAP_MS = 200;
 const SYNC_INTERVAL_MS = 8000;
 const PLAYLIST_REFRESH_MS = 60_000;
@@ -221,6 +221,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (musicRef.current && !isAnnouncing) {
       musicRef.current.volume = clamped;
     }
+    if (chimeRef.current) chimeRef.current.volume = clamped;
+    if (announceRef.current) announceRef.current.volume = clamped;
   }, [isAnnouncing]);
 
   const processQueue = useCallback(() => {
@@ -242,23 +244,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setAnnouncementError(null);
 
     const wasPlaying = isPlayingRef.current;
-    const savedVolume = volumeRef.current;
-
-    music.pause();
-    if (wasPlaying) {
-      void fadeVolume(music, savedVolume, 0.02, FADE_MS);
-    }
+    const userVolume = volumeRef.current;
 
     // Lecture déclenchée sans await avant .play() (sinon le navigateur bloque après le clic)
     chime.src = CHIME_PATH;
     chime.currentTime = 0;
-    chime.volume = 0.9;
+    chime.volume = userVolume;
     announce.src = item.audioPath;
     announce.load();
+    announce.volume = userVolume;
 
     const chimePlay = chime.play();
 
     void (async () => {
+      if (wasPlaying && !music.paused) {
+        const fromVol = music.volume > 0 ? music.volume : userVolume;
+        await fadeVolume(music, fromVol, 0, MUSIC_FADE_MS);
+        music.pause();
+      } else if (wasPlaying) {
+        music.pause();
+      }
+
       const chimeResult = await chimePlay
         .then(() => ({ ok: true as const }))
         .catch((err) => ({
@@ -290,7 +296,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const announceResult = await playAudioFile(
         announce,
         item.audioPath,
-        1,
+        userVolume,
         60_000
       );
 
@@ -303,8 +309,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       if (wasPlaying) {
         await applySyncPosition(true);
-        if (musicRef.current) {
-          await fadeVolume(musicRef.current, 0.02, savedVolume, FADE_MS);
+        const restored = musicRef.current;
+        if (restored) {
+          restored.volume = 0;
+          await fadeVolume(restored, 0, userVolume, MUSIC_FADE_MS);
         }
       }
 
