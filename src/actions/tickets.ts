@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/session";
 import {
   getExpirationDate,
   type TicketType,
@@ -26,6 +27,11 @@ export async function createTicket(
   lastname: string,
   ticketType: string
 ): Promise<TicketResult> {
+  const auth = await requireUser(["DRIVER", "ADMIN"]);
+  if ("error" in auth) {
+    return { success: false, error: auth.error };
+  }
+
   const fn = firstname.trim();
   const ln = lastname.trim();
 
@@ -49,7 +55,8 @@ export async function createTicket(
     });
 
     revalidatePath("/admin");
-    revalidatePath("/controller");
+    revalidatePath("/controleur");
+    revalidatePath("/chauffeur");
 
     return { success: true, ticket };
   } catch {
@@ -102,12 +109,41 @@ export async function searchTicket(
 }
 
 export async function deleteTicket(id: string) {
+  const { hasAdminAccess } = await import("@/lib/session");
+  if (!(await hasAdminAccess())) {
+    return { success: false, error: "Non autorisé." };
+  }
+
   try {
     await prisma.ticket.delete({ where: { id } });
     revalidatePath("/admin");
     return { success: true };
   } catch {
     return { success: false, error: "Impossible de supprimer le billet." };
+  }
+}
+
+export async function getAllTickets(search?: string) {
+  const auth = await requireUser(["CONTROLLER", "ADMIN"]);
+  if ("error" in auth) return [];
+
+  const q = search?.trim();
+  const now = new Date();
+
+  try {
+    return await prisma.ticket.findMany({
+      where: q
+        ? {
+            OR: [
+              { firstname: { contains: q, mode: "insensitive" } },
+              { lastname: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : undefined,
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return [];
   }
 }
 

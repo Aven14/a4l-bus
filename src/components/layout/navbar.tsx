@@ -1,20 +1,60 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { logoutUser } from "@/actions/auth";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@prisma/client";
 
-const links = [
-  { href: "/", label: "Accueil" },
-  { href: "/driver", label: "Conducteur" },
-  { href: "/tickets", label: "Billets" },
-  { href: "/controller", label: "Contrôle" },
-  { href: "/admin", label: "Admin" },
-];
+type NavUser = {
+  firstname: string;
+  lastname: string;
+  role: UserRole;
+};
 
-export function Navbar() {
+const publicLinks = [{ href: "/", label: "Accueil" }];
+
+function roleLinks(role: UserRole) {
+  switch (role) {
+    case "DRIVER":
+      return [
+        { href: "/chauffeur", label: "Mon service" },
+        { href: "/chauffeur/annonces", label: "Annonces" },
+      ];
+    case "CONTROLLER":
+      return [{ href: "/controleur", label: "Contrôle billets" }];
+    case "ADMIN":
+      return [
+        { href: "/chauffeur", label: "Chauffeur" },
+        { href: "/controleur", label: "Contrôleur" },
+        { href: "/admin", label: "Admin" },
+      ];
+    default:
+      return [];
+  }
+}
+
+export function Navbar({ user }: { user: NavUser | null }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const links = [
+    ...publicLinks,
+    ...(user ? roleLinks(user.role) : []),
+    ...(!user
+      ? [
+          { href: "/connexion", label: "Connexion" },
+          { href: "/inscription", label: "Inscription" },
+        ]
+      : []),
+  ];
+
+  const handleLogout = async () => {
+    await logoutUser();
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-line bg-surface/90 shadow-sm backdrop-blur-md">
@@ -43,22 +83,22 @@ export function Navbar() {
           })}
         </nav>
 
-        <nav className="flex gap-1 md:hidden">
-          {links.slice(0, 3).map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "rounded-lg px-2.5 py-1.5 text-xs font-medium",
-                pathname === link.href
-                  ? "bg-primary text-white"
-                  : "text-muted"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex items-center gap-2">
+          {user && (
+            <>
+              <span className="hidden text-xs text-muted sm:inline">
+                {user.firstname}
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg px-2 py-1.5 text-xs font-medium text-accent hover:bg-accent-light"
+              >
+                Déco
+              </button>
+            </>
+          )}
+        </div>
       </div>
       <div className="h-1 bg-gradient-to-r from-primary via-primary to-accent" />
     </header>

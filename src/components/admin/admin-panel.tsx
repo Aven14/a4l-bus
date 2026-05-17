@@ -11,8 +11,10 @@ import {
   seedTransportLines,
 } from "@/actions/admin";
 import { deleteTicket } from "@/actions/tickets";
+import { UsersPanel } from "@/components/admin/users-panel";
 import { formatDate } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import type { UserRole } from "@prisma/client";
 
 type LineWithStops = {
   id: string;
@@ -39,16 +41,27 @@ type TicketRow = {
 
 type Stats = { total: number; active: number; expired: number };
 
+type UserRow = {
+  id: string;
+  email: string;
+  firstname: string;
+  lastname: string;
+  role: UserRole;
+  createdAt: Date;
+};
+
 export function AdminPanel({
   authenticated,
   lines,
   tickets,
   stats,
+  users,
 }: {
   authenticated: boolean;
   lines: LineWithStops[];
   tickets: TicketRow[];
   stats: Stats;
+  users: UserRow[];
 }) {
   const [authed, setAuthed] = useState(authenticated);
   const [password, setPassword] = useState("");
@@ -117,6 +130,8 @@ export function AdminPanel({
           Déconnexion
         </button>
       </div>
+
+      <UsersPanel users={users} />
 
       <section className="panel p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">

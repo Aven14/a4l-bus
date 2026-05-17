@@ -7,6 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  PENDING
+  DRIVER
+  CONTROLLER
+  ADMIN
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  firstname    String
+  lastname     String
+  role         UserRole      @default(PENDING)
+  createdAt    DateTime      @default(now())
+  sessions     Session[]
+  shifts       DriverShift[]
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
 model Ticket {
   id         String   @id @default(cuid())
   firstname  String
@@ -20,12 +53,13 @@ model Ticket {
 }
 
 model TransportLine {
-  id        String   @id @default(cuid())
-  number    Int      @unique
+  id        String        @id @default(cuid())
+  number    Int           @unique
   name      String
-  color     String   @default("#E63946")
-  createdAt DateTime @default(now())
+  color     String        @default("#1d4ed8")
+  createdAt DateTime      @default(now())
   stops     Stop[]
+  shifts    DriverShift[]
 }
 
 model Stop {
@@ -38,4 +72,17 @@ model Stop {
   line     TransportLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
 
   @@unique([lineId, slug])
+}
+
+model DriverShift {
+  id        String        @id @default(cuid())
+  userId    String
+  lineId    String
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  line      TransportLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+
+  @@index([userId, endedAt])
+  @@index([lineId, endedAt])
 }

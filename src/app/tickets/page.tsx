@@ -1,14 +1,5 @@
-import { TicketForm } from "@/components/tickets/ticket-form";
-import { PageHeader } from "@/components/ui/page-header";
+import { redirect } from "next/navigation";
 
-export default function TicketsPage() {
-  return (
-    <div className="page-enter mx-auto max-w-6xl px-4">
-      <PageHeader
-        title="Émission de billets"
-        subtitle="Créez un titre de transport pour un passager."
-      />
-      <TicketForm />
-    </div>
-  );
+export default function TicketsRedirect() {
+  redirect("/chauffeur");
 }

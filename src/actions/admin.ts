@@ -4,6 +4,11 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_COOKIE, hashToken, isAdminAuthenticated } from "@/lib/auth";
+import { hasAdminAccess } from "@/lib/session";
+
+async function adminGuard() {
+  return hasAdminAccess();
+}
 
 export async function loginAdmin(password: string) {
   const expected = process.env.ADMIN_PASSWORD;
@@ -30,7 +35,7 @@ export async function logoutAdmin() {
 }
 
 export async function addLine(number: number, name: string, color: string) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await adminGuard())) {
     return { success: false, error: "Non autorisé." };
   }
 
@@ -45,8 +50,44 @@ export async function addLine(number: number, name: string, color: string) {
   }
 }
 
+export async function updateLine(
+  id: string,
+  data: { number?: number; name?: string; color?: string }
+) {
+  if (!(await adminGuard())) {
+    return { success: false, error: "Non autorisé." };
+  }
+
+  try {
+    await prisma.transportLine.update({ where: { id }, data });
+    revalidatePath("/admin");
+    revalidatePath("/chauffeur");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Impossible de modifier la ligne." };
+  }
+}
+
+export async function updateStop(
+  id: string,
+  data: { name?: string; slug?: string; audioUrl?: string; order?: number }
+) {
+  if (!(await adminGuard())) {
+    return { success: false, error: "Non autorisé." };
+  }
+
+  try {
+    await prisma.stop.update({ where: { id }, data });
+    revalidatePath("/admin");
+    revalidatePath("/chauffeur");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Impossible de modifier l'arrêt." };
+  }
+}
+
 export async function deleteLine(id: string) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await adminGuard())) {
     return { success: false, error: "Non autorisé." };
   }
 
@@ -66,7 +107,7 @@ export async function addStop(
   audioUrl: string,
   order: number
 ) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await adminGuard())) {
     return { success: false, error: "Non autorisé." };
   }
 
@@ -82,7 +123,7 @@ export async function addStop(
 }
 
 export async function deleteStop(id: string) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await adminGuard())) {
     return { success: false, error: "Non autorisé." };
   }
 
@@ -107,7 +148,7 @@ export async function getAdminLines() {
 }
 
 export async function seedTransportLines() {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await adminGuard())) {
     return { success: false, error: "Non autorisé." };
   }
 

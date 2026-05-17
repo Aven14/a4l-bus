@@ -5,7 +5,7 @@ const services = [
   {
     title: "Radio & annonces",
     desc: "Musique en continu et messages arrêt avec signal sonore.",
-    href: "/driver",
+    href: "/chauffeur",
     color: "from-primary/10 to-primary/5",
     icon: (
       <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -16,7 +16,7 @@ const services = [
   {
     title: "Billets",
     desc: "Émission trajet unique, pass journée ou semaine.",
-    href: "/tickets",
+    href: "/inscription",
     color: "from-accent-light to-white",
     icon: (
       <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -27,7 +27,7 @@ const services = [
   {
     title: "Contrôle",
     desc: "Vérification instantanée des titres de transport.",
-    href: "/controller",
+    href: "/connexion",
     color: "from-primary-light/80 to-white",
     icon: (
       <svg className="h-6 w-6 text-primary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -59,12 +59,12 @@ export default function HomePage() {
               gestion des titres de transport pour votre serveur Arma 3.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/driver" className="btn-primary">
-                Panneau conducteur
-              </Link>
-              <Link href="/tickets" className="btn-secondary">
-                Émettre un billet
-              </Link>
+            <Link href="/connexion" className="btn-primary">
+              Espace personnel
+            </Link>
+            <Link href="/inscription" className="btn-secondary">
+              Créer un compte
+            </Link>
             </div>
           </div>
 
