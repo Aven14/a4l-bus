@@ -1,9 +1,9 @@
 export function TransportBackground() {
   return (
     <div className="transport-bg" aria-hidden>
-      <div className="metro-line metro-line-1" />
-      <div className="metro-line metro-line-2" />
-      <div className="metro-line metro-line-3" />
+      <div className="route-stripe route-stripe-1" />
+      <div className="route-stripe route-stripe-2" />
+      <div className="route-stripe route-stripe-3" />
     </div>
   );
 }

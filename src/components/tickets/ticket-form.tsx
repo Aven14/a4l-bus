@@ -39,9 +39,9 @@ export function TicketForm() {
 
   return (
     <div className="max-w-lg">
-      <form onSubmit={handleSubmit} className="glass-card space-y-4 p-6">
+      <form onSubmit={handleSubmit} className="panel space-y-4 p-6">
         <div>
-          <label className="mb-1 block text-sm text-slate-400">Prénom</label>
+          <label className="label-caps mb-1 block">Prénom</label>
           <input
             type="text"
             value={firstname}
@@ -52,7 +52,7 @@ export function TicketForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm text-slate-400">Nom</label>
+          <label className="label-caps mb-1 block">Nom</label>
           <input
             type="text"
             value={lastname}
@@ -63,7 +63,7 @@ export function TicketForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm text-slate-400">Type de billet</label>
+          <label className="label-caps mb-1 block">Type de billet</label>
           <select
             value={ticketType}
             onChange={(e) => setTicketType(e.target.value as typeof ticketType)}
@@ -78,7 +78,7 @@ export function TicketForm() {
         </div>
 
         {error && (
-          <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <p className="border-2 border-signal bg-canvas px-3 py-2 text-sm text-signal">
             {error}
           </p>
         )}
@@ -89,17 +89,13 @@ export function TicketForm() {
       </form>
 
       {created && (
-        <div className="glass-card glass-card-accent mt-4 p-6">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
-            Billet créé
+        <div className="panel-highlight mt-4 p-6">
+          <p className="label-caps mb-2">Billet émis</p>
+          <p className="font-display text-xl font-bold uppercase text-track">
+            {created.firstname} {created.lastname}
           </p>
-          <p className="text-white">
-            <strong>
-              {created.firstname} {created.lastname}
-            </strong>
-          </p>
-          <p className="text-slate-400">{created.ticketType}</p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-1 text-muted">{created.ticketType}</p>
+          <p className="mt-2 text-sm text-muted">
             Expire le {formatDate(created.expiresAt)}
           </p>
         </div>

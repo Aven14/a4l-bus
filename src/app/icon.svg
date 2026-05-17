@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#E63946"/>
-  <text x="16" y="22" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="14" font-weight="bold">CB</text>
+  <rect width="32" height="32" fill="#ffffff"/>
+  <rect y="0" width="32" height="4" fill="#111111"/>
+  <rect x="4" y="10" width="20" height="3" fill="#111111"/>
+  <rect x="4" y="15" width="14" height="3" fill="#111111"/>
+  <rect x="4" y="20" width="20" height="3" fill="#111111"/>
 </svg>

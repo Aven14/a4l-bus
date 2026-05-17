@@ -6,14 +6,14 @@ export function PageHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
+    <div className="mb-8 border-b-2 border-track pb-6">
+      <p className="label-caps mb-2">Cross Track Bus</p>
+      <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-track md:text-4xl">
         {title}
       </h1>
       {subtitle && (
-        <p className="mt-2 text-slate-400">{subtitle}</p>
+        <p className="mt-2 max-w-xl text-muted">{subtitle}</p>
       )}
-      <div className="mt-4 h-1 w-16 rounded-full bg-accent" />
     </div>
   );
 }

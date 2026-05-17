@@ -5,15 +5,15 @@ type Status = "valid" | "expired" | "not_found";
 const config: Record<Status, { label: string; className: string }> = {
   valid: {
     label: "Valide",
-    className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    className: "bg-track text-surface border-track",
   },
   expired: {
     label: "Expiré",
-    className: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    className: "bg-canvas text-muted border-line",
   },
   not_found: {
     label: "Introuvable",
-    className: "bg-red-500/20 text-red-400 border-red-500/30",
+    className: "bg-surface text-signal border-signal",
   },
 };
 
@@ -22,7 +22,7 @@ export function StatusBadge({ status }: { status: Status }) {
   return (
     <span
       className={cn(
-        "inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+        "font-display inline-flex border-2 px-3 py-1 text-[10px] font-bold uppercase tracking-widest",
         className
       )}
     >

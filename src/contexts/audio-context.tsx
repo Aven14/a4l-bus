@@ -221,7 +221,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         isPlaying,
         volume,
         currentTrackIndex: trackIndex,
-        currentTrackTitle: RADIO_TRACKS[trackIndex]?.title ?? "CrossBus Radio",
+        currentTrackTitle: RADIO_TRACKS[trackIndex]?.title ?? "Cross Track Bus Radio",
         isAnnouncing,
         announcementLabel,
         togglePlay,

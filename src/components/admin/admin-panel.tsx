@@ -87,8 +87,8 @@ export function AdminPanel({
 
   if (!authed) {
     return (
-      <form onSubmit={handleLogin} className="glass-card mx-auto max-w-sm p-8">
-        <h2 className="mb-4 text-xl font-bold text-white">Accès Admin</h2>
+      <form onSubmit={handleLogin} className="panel mx-auto max-w-sm p-8">
+        <h2 className="mb-4 text-xl font-bold text-track">Accès Admin</h2>
         <input
           type="password"
           value={password}
@@ -118,9 +118,9 @@ export function AdminPanel({
         </button>
       </div>
 
-      <section className="glass-card p-6">
+      <section className="panel p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-bold text-white">Lignes & arrêts</h2>
+          <h2 className="text-lg font-bold text-track">Lignes & arrêts</h2>
           <button
             type="button"
             className="btn-secondary text-sm"
@@ -225,14 +225,14 @@ export function AdminPanel({
 
         <div className="space-y-4">
           {lines.map((line) => (
-            <div key={line.id} className="rounded-lg border border-white/5 p-4">
+            <div key={line.id} className="rounded-lg border border-line p-4">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-bold text-white">
+                <span className="font-bold text-track">
                   L{line.number} — {line.name}
                 </span>
                 <button
                   type="button"
-                  className="text-xs text-red-400 hover:text-red-300"
+                  className="text-xs text-signal hover:opacity-80"
                   onClick={() =>
                     startTransition(async () => {
                       await deleteLine(line.id);
@@ -243,7 +243,7 @@ export function AdminPanel({
                   Supprimer ligne
                 </button>
               </div>
-              <ul className="space-y-1 text-sm text-slate-400">
+              <ul className="space-y-1 text-sm text-muted">
                 {line.stops.map((stop) => (
                   <li key={stop.id} className="flex justify-between">
                     <span>
@@ -251,7 +251,7 @@ export function AdminPanel({
                     </span>
                     <button
                       type="button"
-                      className="text-red-400 hover:text-red-300"
+                      className="text-signal hover:opacity-80"
                       onClick={() =>
                         startTransition(async () => {
                           await deleteStop(stop.id);
@@ -269,15 +269,15 @@ export function AdminPanel({
         </div>
       </section>
 
-      <section className="glass-card p-6">
-        <h2 className="mb-4 text-lg font-bold text-white">Billets actifs</h2>
+      <section className="panel p-6">
+        <h2 className="mb-4 text-lg font-bold text-track">Billets actifs</h2>
         {tickets.length === 0 ? (
-          <p className="text-slate-500">Aucun billet actif.</p>
+          <p className="text-muted">Aucun billet actif.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left text-slate-500">
+                <tr className="border-b border-line text-left text-muted">
                   <th className="pb-2 pr-4">Passager</th>
                   <th className="pb-2 pr-4">Type</th>
                   <th className="pb-2 pr-4">Expire</th>
@@ -286,8 +286,8 @@ export function AdminPanel({
               </thead>
               <tbody>
                 {tickets.map((t) => (
-                  <tr key={t.id} className="border-b border-white/5">
-                    <td className="py-2 pr-4 text-white">
+                  <tr key={t.id} className="border-b border-line">
+                    <td className="py-2 pr-4 text-track">
                       {t.firstname} {t.lastname}
                     </td>
                     <td className="py-2 pr-4">{t.ticketType}</td>
@@ -295,7 +295,7 @@ export function AdminPanel({
                     <td className="py-2 text-right">
                       <button
                         type="button"
-                        className="text-red-400 hover:text-red-300"
+                        className="text-signal hover:opacity-80"
                         onClick={() =>
                           startTransition(async () => {
                             await deleteTicket(t.id);
@@ -315,7 +315,7 @@ export function AdminPanel({
       </section>
 
       {message && (
-        <p className="text-center text-sm text-accent">{message}</p>
+        <p className="text-center text-sm text-track">{message}</p>
       )}
     </div>
   );
@@ -331,11 +331,11 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="glass-card p-4 text-center">
-      <p className={`text-2xl font-bold ${accent ? "text-accent" : "text-white"}`}>
+    <div className="panel p-4 text-center">
+      <p className={`text-2xl font-bold ${accent ? "text-track" : "text-ink"}`}>
         {value}
       </p>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-muted">{label}</p>
     </div>
   );
 }
