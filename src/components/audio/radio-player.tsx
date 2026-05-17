@@ -8,9 +8,9 @@ export function RadioPlayer() {
     volume,
     currentTrackTitle,
     isAnnouncing,
+    radioReady,
     togglePlay,
     setVolume,
-    nextTrack,
   } = useAudio();
 
   return (
@@ -24,7 +24,7 @@ export function RadioPlayer() {
         <button
           type="button"
           onClick={togglePlay}
-          disabled={isAnnouncing}
+          disabled={isAnnouncing || !radioReady}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:bg-primary-dark disabled:opacity-40"
           aria-label={isPlaying ? "Pause" : "Lecture"}
         >
@@ -43,7 +43,9 @@ export function RadioPlayer() {
           <p className="truncate text-sm font-semibold text-ink">
             {currentTrackTitle}
           </p>
-          <p className="text-xs text-muted">Cross Track Bus Radio</p>
+          <p className="text-xs text-muted">
+            Lecture aléatoire · synchronisée pour tous
+          </p>
         </div>
 
         <input
@@ -56,15 +58,6 @@ export function RadioPlayer() {
           className="h-1 w-24 cursor-pointer accent-primary md:w-32"
           aria-label="Volume"
         />
-
-        <button
-          type="button"
-          onClick={nextTrack}
-          disabled={isAnnouncing}
-          className="btn-secondary py-2 text-xs disabled:opacity-40"
-        >
-          Suivant
-        </button>
       </div>
     </div>
   );
