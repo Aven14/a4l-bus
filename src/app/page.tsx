@@ -50,7 +50,7 @@ export default async function HomePage() {
 
         <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
+            <span className="inline-flex items-center gap-2 rounded-md bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
               <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
               Réseau actif · Vice City
             </span>
@@ -72,13 +72,13 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-primary p-5 text-white shadow-lg shadow-primary/25">
+            <div className="rounded-md bg-primary p-5 text-white shadow-elevated">
               <p className="text-4xl font-extrabold">{lineCount}</p>
               <p className="mt-1 text-sm text-white/80">
                 ligne{lineCount !== 1 ? "s" : ""} au réseau
               </p>
             </div>
-            <div className="rounded-2xl border border-line bg-surface p-5">
+            <div className="rounded-md bg-surface p-5 shadow-card">
               <p className="text-4xl font-extrabold text-primary">{activeLines.length}</p>
               <p className="mt-1 text-sm text-muted">
                 ligne{activeLines.length !== 1 ? "s" : ""} en service
@@ -96,7 +96,7 @@ export default async function HomePage() {
               key={s.title}
               className={`panel-soft bg-gradient-to-br p-6 ${s.color}`}
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-surface shadow-sm">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-surface shadow-card">
                 {s.icon}
               </div>
               <h3 className="font-bold text-ink">{s.title}</h3>
@@ -120,7 +120,7 @@ export default async function HomePage() {
                 className="panel-soft flex items-center gap-4 p-4"
               >
                 <div
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-white shadow-md"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md text-lg font-bold text-white shadow-elevated"
                   style={{ backgroundColor: line.color }}
                 >
                   {line.number}

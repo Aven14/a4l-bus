@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { User, UserRole } from "@prisma/client";
-import { ADMIN_COOKIE, hashToken, isAdminAuthenticated } from "@/lib/auth";
+import { ADMIN_COOKIE, hashToken } from "@/lib/auth";
 import { hasAnyRole, hasRole } from "@/lib/roles";
 import { randomBytes } from "crypto";
 
@@ -72,8 +72,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   return session.user;
 }
 
+/** Accès admin réservé au rôle ADMIN sur le compte connecté */
 export async function hasAdminAccess(): Promise<boolean> {
-  if (await isAdminAuthenticated()) return true;
   const user = await getCurrentUser();
   return user ? hasRole(user.roles, "ADMIN") : false;
 }

@@ -137,6 +137,8 @@ export async function deleteStop(id: string) {
 }
 
 export async function getAdminLines() {
+  if (!(await adminGuard())) return [];
+
   try {
     return await prisma.transportLine.findMany({
       include: { stops: { orderBy: { order: "asc" } } },

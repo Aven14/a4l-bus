@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { hasRole, formatRoles, ROLE_LABELS } from "@/lib/roles";
 import { PageHeader } from "@/components/ui/page-header";
+import { ProfileSettingsForm } from "@/components/account/profile-settings-form";
 import type { UserRole } from "@prisma/client";
 
 const PANEL_LINKS: {
@@ -46,31 +47,27 @@ export default async function EspacePersonnelPage() {
         subtitle={`Bienvenue, ${user.firstname} ${user.lastname}`}
       />
 
-      <div className="panel space-y-4 p-6">
-        <div>
-          <p className="label-caps text-muted">Identité RP</p>
-          <p className="mt-1 text-lg font-semibold text-ink">
-            {user.firstname} {user.lastname}
-          </p>
-        </div>
-        <div>
-          <p className="label-caps text-muted">Email</p>
-          <p className="mt-1 text-ink">{user.email}</p>
-        </div>
-        <div>
-          <p className="label-caps text-muted">Rôles</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+      <ProfileSettingsForm
+        initial={{
+          firstname: user.firstname,
+          lastname: user.lastname,
+          email: user.email,
+        }}
+      />
+
+      <div className="panel mt-6 space-y-4 p-6">
+        <p className="label-caps text-muted">Rôles</p>
+        <div className="mt-2 flex flex-wrap gap-2">
             {user.roles.map((role) => (
               <span
                 key={role}
-                className="rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary"
+                className="rounded-md bg-primary-light px-3 py-1 text-xs font-semibold text-primary shadow-sm"
               >
                 {ROLE_LABELS[role]}
               </span>
             ))}
           </div>
-          <p className="mt-2 text-sm text-muted">{formatRoles(user.roles)}</p>
-        </div>
+        <p className="mt-2 text-sm text-muted">{formatRoles(user.roles)}</p>
       </div>
 
       {accessiblePanels.length > 0 ? (
@@ -81,7 +78,7 @@ export default async function EspacePersonnelPage() {
               <Link
                 key={panel.href}
                 href={panel.href}
-                className="panel-soft block p-5 transition hover:border-primary/30"
+                className="panel-soft block p-5 transition hover:shadow-card-hover"
               >
                 <h3 className="font-bold text-primary">{panel.title}</h3>
                 <p className="mt-1 text-sm text-muted">{panel.desc}</p>

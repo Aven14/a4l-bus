@@ -10,7 +10,7 @@ export function AnnouncementOverlay() {
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-sm">
       <div className="panel-highlight announce-blink mx-4 max-w-md p-8 text-center">
-        <span className="inline-block rounded-full bg-accent px-3 py-1 text-xs font-bold text-white">
+        <span className="inline-block rounded-md bg-accent px-3 py-1 text-xs font-bold text-white shadow-card">
           LIVE
         </span>
         <h2 className="mt-4 text-2xl font-extrabold text-ink">

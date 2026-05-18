@@ -26,10 +26,10 @@ export function DriverPanel() {
               type="button"
               onClick={() => setSelectedLine(line)}
               className={cn(
-                "w-full rounded-xl border px-4 py-3 text-left transition",
+                "w-full rounded-md px-4 py-3 text-left shadow-card transition",
                 selectedLine?.number === line.number
-                  ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
-                  : "border-line bg-surface text-ink hover:border-primary/40 hover:bg-primary-light/30"
+                  ? "bg-primary text-white shadow-elevated"
+                  : "bg-surface text-ink hover:bg-primary-light/35 hover:shadow-card-hover"
               )}
             >
               <span className="text-lg font-bold">L{line.number}</span>
@@ -51,7 +51,7 @@ export function DriverPanel() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-bold text-ink">{selectedLine.name}</h2>
               <span
-                className="rounded-full px-3 py-1 text-xs font-bold text-white"
+                className="rounded-md px-3 py-1 text-xs font-bold text-white shadow-card"
                 style={{ backgroundColor: selectedLine.color }}
               >
                 Ligne {selectedLine.number}
@@ -70,9 +70,9 @@ export function DriverPanel() {
                       `Ligne ${selectedLine.number} — ${stop.name}`
                     )
                   }
-                  className="group flex items-center gap-3 rounded-xl border border-line bg-canvas p-4 text-left transition hover:border-primary hover:bg-primary-light/40 disabled:opacity-40"
+                  className="group flex items-center gap-3 rounded-md bg-surface p-4 text-left shadow-card transition hover:shadow-card-hover disabled:opacity-40"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-sm text-white group-hover:bg-primary-dark">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-sm text-white group-hover:bg-primary-dark">
                     ▶
                   </div>
                   <div>
@@ -84,7 +84,7 @@ export function DriverPanel() {
             </div>
 
             {lastTriggered && (
-              <p className="mt-4 rounded-lg bg-accent-light px-3 py-2 text-center text-sm text-accent">
+              <p className="mt-4 rounded-md bg-accent-light px-3 py-2 text-center text-sm text-accent shadow-card">
                 Dernière annonce : {lastTriggered}
               </p>
             )}

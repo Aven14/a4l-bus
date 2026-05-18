@@ -14,17 +14,17 @@ export function RadioPlayer() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-surface/95 shadow-[0_-4px_24px_rgba(29,78,216,0.08)] backdrop-blur-md ${
-        isAnnouncing ? "announce-blink border-accent/30" : ""
+      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-line/60 bg-surface/95 shadow-[0_-8px_28px_-6px_rgba(15,23,42,0.1),0_-4px_12px_-2px_rgba(29,78,216,0.1)] backdrop-blur-md ${
+        isAnnouncing ? "announce-blink" : ""
       }`}
     >
-      <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-accent" />
+      <div className="h-px bg-gradient-to-r from-primary/40 via-primary/20 to-accent/30" />
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
         <button
           type="button"
           onClick={togglePlay}
           disabled={isAnnouncing || !radioReady}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:bg-primary-dark disabled:opacity-40"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-white shadow-elevated transition hover:bg-primary-dark disabled:opacity-40"
           aria-label={isPlaying ? "Pause" : "Lecture"}
         >
           {isPlaying ? (

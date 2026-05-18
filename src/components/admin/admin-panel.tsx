@@ -2,8 +2,6 @@
 
 import { useState, useTransition } from "react";
 import {
-  loginAdmin,
-  logoutAdmin,
   addLine,
   deleteLine,
   addStop,
@@ -51,20 +49,16 @@ type UserRow = {
 };
 
 export function AdminPanel({
-  authenticated,
   lines,
   tickets,
   stats,
   users,
 }: {
-  authenticated: boolean;
   lines: LineWithStops[];
   tickets: TicketRow[];
   stats: Stats;
   users: UserRow[];
 }) {
-  const [authed, setAuthed] = useState(authenticated);
-  const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -76,59 +70,12 @@ export function AdminPanel({
   const [stopSlug, setStopSlug] = useState("");
   const [stopAudio, setStopAudio] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    startTransition(async () => {
-      const res = await loginAdmin(password);
-      if (res.success) {
-        setAuthed(true);
-        setMessage(null);
-        window.location.reload();
-      } else {
-        setMessage(res.error ?? "Erreur");
-      }
-    });
-  };
-
-  const handleLogout = () => {
-    startTransition(async () => {
-      await logoutAdmin();
-      setAuthed(false);
-      window.location.reload();
-    });
-  };
-
-  if (!authed) {
-    return (
-      <form onSubmit={handleLogin} className="panel mx-auto max-w-sm p-8">
-        <h2 className="mb-4 text-xl font-bold text-primary">Accès Admin</h2>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="input-field mb-4"
-          placeholder="Mot de passe admin"
-          required
-        />
-        {message && <p className="mb-3 text-sm text-red-400">{message}</p>}
-        <button type="submit" disabled={pending} className="btn-primary w-full">
-          {pending ? <LoadingSpinner /> : "Connexion"}
-        </button>
-      </form>
-    );
-  }
-
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard label="Total billets" value={stats.total} />
-          <StatCard label="Actifs" value={stats.active} accent />
-          <StatCard label="Expirés" value={stats.expired} />
-        </div>
-        <button type="button" onClick={handleLogout} className="btn-secondary">
-          Déconnexion
-        </button>
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard label="Total billets" value={stats.total} />
+        <StatCard label="Actifs" value={stats.active} accent />
+        <StatCard label="Expirés" value={stats.expired} />
       </div>
 
       <UsersPanel users={users} />
@@ -240,7 +187,7 @@ export function AdminPanel({
 
         <div className="space-y-4">
           {lines.map((line) => (
-            <div key={line.id} className="rounded-lg border border-line p-4">
+            <div key={line.id} className="rounded-md bg-canvas/80 p-4 shadow-card">
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-bold text-primary">
                   L{line.number} — {line.name}

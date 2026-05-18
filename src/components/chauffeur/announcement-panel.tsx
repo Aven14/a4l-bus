@@ -37,9 +37,9 @@ export function AnnouncementPanel({
                 `Arrêt ${index + 1} — ${stop.name}`
               )
             }
-            className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4 text-left transition hover:border-primary hover:bg-primary-light/30 disabled:opacity-50"
+            className="flex items-center gap-4 rounded-md bg-surface p-4 text-left shadow-card transition hover:shadow-card-hover disabled:opacity-50"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-white shadow-card">
               {index + 1}
             </span>
             <div>

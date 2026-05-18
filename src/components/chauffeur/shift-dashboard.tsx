@@ -86,7 +86,7 @@ export function ShiftDashboard({
               type="button"
               onClick={handleEnd}
               disabled={pending}
-              className="rounded-xl border-2 border-accent px-5 py-2.5 text-sm font-semibold text-accent hover:bg-accent-light"
+              className="rounded-md px-5 py-2.5 text-sm font-semibold text-accent shadow-card transition hover:bg-accent-light hover:shadow-card-hover"
             >
               {pending ? <LoadingSpinner /> : "Terminer le service"}
             </button>
@@ -107,7 +107,7 @@ export function ShiftDashboard({
             type="button"
             disabled={line.isOccupied || pending}
             onClick={() => handleStart(line.id)}
-            className="panel-soft p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-primary"
+            className="panel-soft p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50 hover:shadow-card-hover"
           >
             <div className="flex items-center gap-3">
               <span

@@ -17,9 +17,8 @@ export function middleware(request: NextRequest) {
   if (!isProtected) return NextResponse.next();
 
   const session = request.cookies.get("ctb_session")?.value;
-  const adminLegacy = request.cookies.get("crossbus_admin")?.value;
 
-  if (!session && !adminLegacy) {
+  if (!session) {
     const login = new URL("/connexion", request.url);
     login.searchParams.set("redirect", pathname);
     return NextResponse.redirect(login);
