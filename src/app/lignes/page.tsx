@@ -21,7 +21,7 @@ export default async function LignesPage() {
           {lines.map((line) => (
             <li key={line.id}>
               <Link
-                href={`/lignes/${line.id}`}
+                href={`/lignes/l${line.number}`}
                 className="panel-soft flex items-center gap-4 p-4 transition hover:shadow-card-hover"
               >
                 <div

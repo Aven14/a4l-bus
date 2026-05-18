@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPublicLineById } from "@/actions/lines";
+import { getPublicLineByNumber } from "@/actions/lines";
 import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ lineId: string }> };
 
 export default async function LigneDetailPage({ params }: Props) {
   const { lineId } = await params;
-  const line = await getPublicLineById(lineId);
+  
+  // Extraire le numéro de ligne depuis le slug (ex: "l1" -> 1)
+  const lineNumber = parseInt(lineId.replace("l", ""), 10);
+  if (isNaN(lineNumber)) notFound();
+  
+  const line = await getPublicLineByNumber(lineNumber);
   if (!line) notFound();
 
   return (
@@ -29,7 +34,7 @@ export default async function LigneDetailPage({ params }: Props) {
         </span>
       </div>
 
-      <ol className="space-y-2">
+      <ol className="relative space-y-0">
         {line.stops.map((stop, index) => (
           <li key={stop.id}>
             <div className="panel-soft flex gap-4 p-4">
@@ -41,9 +46,15 @@ export default async function LigneDetailPage({ params }: Props) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink">{stop.name}</p>
-                <p className="mt-0.5 truncate text-xs text-muted">{stop.audioUrl}</p>
               </div>
             </div>
+            {index < line.stops.length - 1 && (
+              <div className="flex justify-center py-2">
+                <svg className="h-6 w-6 text-primary animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+            )}
           </li>
         ))}
       </ol>

@@ -94,10 +94,10 @@ body {
 
 @keyframes route-line-drift {
   from {
-    transform: translateX(-100%);
+    transform: translateX(calc(-100% - 10px));
   }
   to {
-    transform: translateX(calc(100vw + 100%));
+    transform: translateX(calc(100vw + 10px));
   }
 }
 

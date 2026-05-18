@@ -120,7 +120,7 @@ export default async function HomePage() {
             {activeLines.map((line) => (
               <Link
                 key={line.id}
-                href={`/lignes/${line.id}`}
+                href={`/lignes/l${line.number}/suivi`}
                 className="panel-soft flex items-center gap-4 p-4 transition hover:shadow-card-hover"
               >
                 <div
