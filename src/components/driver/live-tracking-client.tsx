@@ -64,6 +64,15 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
         </div>
       </div>
 
+      {/* Indicateur de position */}
+      {currentIndex === 0 && (
+        <div className="panel-soft bg-gradient-to-r from-primary-light to-white p-4 text-center">
+          <p className="text-sm font-semibold text-primary">
+            🚌 Bus actuellement au départ : <span className="text-lg font-bold">{line.stops[0]?.name}</span>
+          </p>
+        </div>
+      )}
+
       {/* Liste des arrêts avec suivi */}
       <div className="space-y-0">
         {line.stops.map((stop, index) => {
