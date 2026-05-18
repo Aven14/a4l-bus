@@ -4,8 +4,6 @@ import { getCurrentUser } from "@/lib/session";
 import { hasRole, formatRoles, ROLE_LABELS } from "@/lib/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProfileSettingsForm } from "@/components/account/profile-settings-form";
-import { TicketHistory } from "@/components/account/ticket-history";
-import { getUserTickets } from "@/actions/tickets";
 import type { UserRole } from "@prisma/client";
 
 const PANEL_LINKS: {
@@ -42,9 +40,6 @@ export default async function EspacePersonnelPage() {
     hasRole(user.roles, p.role)
   );
 
-  // Récupérer les tickets de l'utilisateur
-  const tickets = await getUserTickets(user.id);
-
   return (
     <div className="page-enter mx-auto max-w-2xl px-4">
       <PageHeader
@@ -59,12 +54,6 @@ export default async function EspacePersonnelPage() {
           email: user.email,
         }}
       />
-
-      {/* Titres de transport */}
-      <section className="mt-6">
-        <h2 className="mb-4 text-lg font-bold text-ink">Mes titres de transport</h2>
-        <TicketHistory tickets={tickets} />
-      </section>
 
       <div className="panel mt-6 space-y-4 p-6">
         <p className="label-caps text-muted">Rôles</p>
