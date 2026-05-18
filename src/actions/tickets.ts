@@ -110,6 +110,11 @@ export async function searchTicket(
 
     if (!ticket) return { status: "not_found" };
 
+    // Lifetime Pass n'expire jamais
+    if (!ticket.expiresAt) {
+      return { status: "valid", ticket };
+    }
+
     const isExpired = new Date(ticket.expiresAt) < new Date();
     return {
       status: isExpired ? "expired" : "valid",
