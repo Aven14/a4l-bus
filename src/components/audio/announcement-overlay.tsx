@@ -5,7 +5,7 @@ import { useAudio } from "@/contexts/audio-context";
 export function AnnouncementOverlay() {
   const { isAnnouncing, announcementLabel, announcementError } = useAudio();
 
-  if (!isAnnouncing) return null;
+  if (!isAnnouncing && !announcementLabel) return null;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-white/80 backdrop-blur-sm">
@@ -32,6 +32,10 @@ export function AnnouncementOverlay() {
             />
           ))}
         </div>
+        
+        <p className="mt-4 text-xs text-muted">
+          📢 Annonce diffusée par le chauffeur
+        </p>
       </div>
     </div>
   );

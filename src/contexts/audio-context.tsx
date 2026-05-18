@@ -198,6 +198,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         const announcements = await getPendingAnnouncements(lastAnnouncementCheckRef.current);
         if (announcements.length > 0) {
           lastAnnouncementCheckRef.current = new Date();
+          
+          // Vérifier que l'audio est débloqué
+          if (!audioUnlockedRef.current) {
+            return;
+          }
+          
           // Ajouter chaque annonce à la file
           for (const ann of announcements) {
             queueRef.current.push({
@@ -205,7 +211,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
               label: ann.label,
             });
           }
-          processQueue();
+          
+          // Forcer le traitement de la file
+          if (!processingRef.current) {
+            processQueue();
+          }
         }
       } catch (err) {
         console.error("Erreur polling annonces:", err);

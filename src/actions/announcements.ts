@@ -7,7 +7,6 @@ export async function getPendingAnnouncements(lastCheckAt: Date | null) {
     const announcements = await prisma.liveAnnouncement.findMany({
       where: {
         played: false,
-        ...(lastCheckAt ? { createdAt: { gt: lastCheckAt } } : {}),
       },
       orderBy: { createdAt: "asc" },
     });
