@@ -67,7 +67,6 @@ export function AdminPanel({
   const [lineColor, setLineColor] = useState("#E63946");
   const [stopLineId, setStopLineId] = useState("");
   const [stopName, setStopName] = useState("");
-  const [stopSlug, setStopSlug] = useState("");
   const [stopAudio, setStopAudio] = useState("");
 
   return (
@@ -158,13 +157,6 @@ export function AdminPanel({
           />
           <input
             type="text"
-            placeholder="slug"
-            value={stopSlug}
-            onChange={(e) => setStopSlug(e.target.value)}
-            className="input-field"
-          />
-          <input
-            type="text"
             placeholder="/audio/line1/stop.mp3"
             value={stopAudio}
             onChange={(e) => setStopAudio(e.target.value)}
@@ -176,7 +168,14 @@ export function AdminPanel({
             disabled={pending || !stopLineId}
             onClick={() =>
               startTransition(async () => {
-                await addStop(stopLineId, stopName, stopSlug, stopAudio, 0);
+                // Générer le slug automatiquement depuis le nom
+                const slug = stopName
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-|-$/g, "");
+                await addStop(stopLineId, stopName, slug, stopAudio, 0);
                 window.location.reload();
               })
             }
