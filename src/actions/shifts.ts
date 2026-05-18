@@ -142,3 +142,53 @@ export async function getActiveShiftsOverview() {
     orderBy: { startedAt: "desc" },
   });
 }
+
+export async function announceStop(stopId: string) {
+  const auth = await requireUser(["DRIVER", "ADMIN"]);
+  if ("error" in auth) return { success: false, error: auth.error };
+
+  // Trouver le shift actif
+  const shift = await prisma.driverShift.findFirst({
+    where: { userId: auth.user.id, endedAt: null },
+    include: { line: { include: { stops: { orderBy: { order: "asc" } } } } },
+  });
+
+  if (!shift) {
+    return { success: false, error: "Aucun service en cours." };
+  }
+
+  // Vérifier que l'arrêt appartient à la ligne
+  const stop = shift.line.stops.find((s) => s.id === stopId);
+  if (!stop) {
+    return { success: false, error: "Arrêt non valide pour cette ligne." };
+  }
+
+  try {
+    // Logique : 
+    // - Si pas de currentStopId, on définit celui-ci comme actuel
+    // - Si currentStopId existe et différent, l'ancien devient "passé" et le nouveau devient "actuel"
+    // - On met destinationStopId au prochain arrêt s'il existe
+    const stopOrder = stop.order;
+    const nextStop = shift.line.stops.find((s) => s.order === stopOrder + 1);
+
+    await prisma.driverShift.update({
+      where: { id: shift.id },
+      data: {
+        currentStopId: stopId,
+        destinationStopId: nextStop?.id ?? null,
+      },
+    });
+
+    revalidatePath("/lignes");
+    revalidatePath("/chauffeur/annonces");
+
+    return { 
+      success: true, 
+      currentStop: stop.name,
+      nextStop: nextStop?.name ?? null,
+    };
+  } catch {
+    return { success: false, error: "Impossible d'annoncer l'arrêt." };
+  }
+}
+

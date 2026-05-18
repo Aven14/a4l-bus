@@ -93,6 +93,8 @@ export async function getActiveLineWithTracking(lineNumber: number) {
         stops: shift.line.stops,
       },
       shiftId: shift.id,
+      currentStopId: shift.currentStopId,
+      destinationStopId: shift.destinationStopId,
     };
   } catch {
     return null;

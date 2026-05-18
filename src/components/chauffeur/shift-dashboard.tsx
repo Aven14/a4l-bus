@@ -26,6 +26,8 @@ type Shift = {
     color: string;
     stops: { id: string; name: string; order: number }[];
   };
+  currentStopId?: string | null;
+  destinationStopId?: string | null;
 };
 
 export function ShiftDashboard({
