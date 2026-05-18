@@ -18,7 +18,7 @@ export type TicketResult = {
     lastname: string;
     ticketType: string;
     createdAt: Date;
-    expiresAt: Date | null;
+    expiresAt: Date;
   };
 };
 
@@ -52,7 +52,7 @@ export async function createTicket(
         firstname: fn,
         lastname: ln,
         ticketType: ticketType as TicketType,
-        expiresAt: expiresAt || undefined,
+        expiresAt,
         issuedById: auth.user.id,
       },
     });
@@ -109,11 +109,6 @@ export async function searchTicket(
     });
 
     if (!ticket) return { status: "not_found" };
-
-    // Lifetime Pass n'expire jamais
-    if (!ticket.expiresAt) {
-      return { status: "valid", ticket };
-    }
 
     const isExpired = new Date(ticket.expiresAt) < new Date();
     return {

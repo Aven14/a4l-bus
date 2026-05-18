@@ -8,7 +8,7 @@ type Ticket = {
   lastname: string;
   ticketType: string;
   createdAt: Date;
-  expiresAt: Date | null;
+  expiresAt: Date;
   cancelled: boolean;
   cancelledAt: Date | null;
 };
@@ -66,12 +66,12 @@ export function TicketHistory({ tickets }: { tickets: Ticket[] }) {
                 </div>
                 <div className="mt-3 text-xs text-muted">
                   <p>Créé le {formatDate(ticket.createdAt)}</p>
-                  {ticket.expiresAt ? (
-                    <p>Expire le {formatDate(ticket.expiresAt)}</p>
-                  ) : (
+                  {ticket.ticketType === "Lifetime Pass" ? (
                     <p className="text-green-600 font-medium">
-                      Valable indéfiniment
+                      Expire dans 100 ans (illimité)
                     </p>
+                  ) : (
+                    <p>Expire le {formatDate(ticket.expiresAt)}</p>
                   )}
                 </div>
               </div>

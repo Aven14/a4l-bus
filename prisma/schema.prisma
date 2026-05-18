@@ -43,15 +43,15 @@ model Session {
 }
 
 model Ticket {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   firstname   String
   lastname    String
   ticketType  String
   issuedById  String?
-  issuedBy    User?     @relation("IssuedTickets", fields: [issuedById], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  expiresAt   DateTime? @db.Timestamptz(3)
-  cancelled   Boolean   @default(false)
+  issuedBy    User?    @relation("IssuedTickets", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime @db.Timestamptz(3)
+  cancelled   Boolean  @default(false)
   cancelledAt DateTime? @db.Timestamptz(3)
 
   @@index([firstname, lastname])
