@@ -38,11 +38,7 @@ export function AnnouncementPanel({
     const result = await announceStop(stop.id);
     
     if (result.success) {
-      if (result.nextStop) {
-        setMessage(`✓ Actuel : ${result.currentStop} · Prochain : ${result.nextStop}`);
-      } else {
-        setMessage(`✓ Actuel : ${result.currentStop} (dernier arrêt)`);
-      }
+      setMessage(`✓ Annonce : ${result.currentStop}`);
     }
 
     setPending(null);

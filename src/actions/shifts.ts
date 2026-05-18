@@ -164,18 +164,14 @@ export async function announceStop(stopId: string) {
   }
 
   try {
-    // Logique : 
-    // - Si pas de currentStopId, on définit celui-ci comme actuel
-    // - Si currentStopId existe et différent, l'ancien devient "passé" et le nouveau devient "actuel"
-    // - On met destinationStopId au prochain arrêt s'il existe
-    const stopOrder = stop.order;
-    const nextStop = shift.line.stops.find((s) => s.order === stopOrder + 1);
-
+    // Logique simplifiée :
+    // - On stocke juste l'arrêt annoncé comme "currentStopId"
+    // - Pas de destination, juste la position actuelle
     await prisma.driverShift.update({
       where: { id: shift.id },
       data: {
         currentStopId: stopId,
-        destinationStopId: nextStop?.id ?? null,
+        destinationStopId: null,
       },
     });
 
@@ -185,7 +181,6 @@ export async function announceStop(stopId: string) {
     return { 
       success: true, 
       currentStop: stop.name,
-      nextStop: nextStop?.name ?? null,
     };
   } catch {
     return { success: false, error: "Impossible d'annoncer l'arrêt." };

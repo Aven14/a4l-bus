@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { updateTrackingPosition } from "@/actions/tracking";
 
 type Stop = {
   id: string;
@@ -23,24 +22,18 @@ type LineData = {
 type LiveTrackingClientProps = {
   initialData: {
     line: LineData;
-    shiftId: string;
     currentStopId: string | null;
-    destinationStopId: string | null;
   };
 };
 
 export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [currentStopId, setCurrentStopId] = useState<string | null>(initialData.currentStopId);
-  const [destinationStopId, setDestinationStopId] = useState<string | null>(initialData.destinationStopId);
-  const [message, setMessage] = useState<string | null>(null);
+  const { currentStopId } = initialData;
 
-  const { line, shiftId } = initialData;
+  const { line } = initialData;
 
-  // Trouver les index des arrêts actuels
+  // Trouver l'index de l'arrêt actuel
   const currentIndex = line.stops.findIndex((s) => s.id === currentStopId);
-  const destIndex = line.stops.findIndex((s) => s.id === destinationStopId);
 
   // Actualisation automatique toutes les 5 secondes
   useEffect(() => {
@@ -49,38 +42,6 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
     }, 5000);
     return () => clearInterval(interval);
   }, [router]);
-
-  const handleStopClick = async (stopId: string) => {
-    if (pending) return;
-    setPending(true);
-    setMessage(null);
-
-    try {
-      const result = await updateTrackingPosition(shiftId, stopId);
-      
-      if (result.success) {
-        // Logique de suivi : premier clic = arrêt actuel, second = destination
-        if (!currentStopId) {
-          setCurrentStopId(stopId);
-          setMessage("Position actuelle définie");
-        } else if (!destinationStopId || destinationStopId === stopId) {
-          setDestinationStopId(stopId);
-          setMessage(`En direction de ${line.stops.find(s => s.id === stopId)?.name}`);
-        } else {
-          // Reset et nouveau départ
-          setCurrentStopId(stopId);
-          setDestinationStopId(null);
-          setMessage("Nouvelle position actuelle");
-        }
-        
-        router.refresh();
-      } else {
-        setMessage(result.error ?? "Erreur");
-      }
-    } finally {
-      setPending(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -103,39 +64,32 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
         </div>
       </div>
 
-      {/* Indicateur de direction */}
-      {destIndex > currentIndex && currentIndex >= 0 && (
+      {/* Indicateur de position */}
+      {currentIndex === 0 && (
         <div className="panel-soft bg-gradient-to-r from-primary-light to-white p-4 text-center">
           <p className="text-sm font-semibold text-primary">
-            En direction de{" "}
-            <span className="text-lg font-bold">{line.stops[destIndex]?.name}</span>
+            🚌 Bus actuellement au départ : <span className="text-lg font-bold">{line.stops[0]?.name}</span>
           </p>
         </div>
-      )}
-
-      {/* Message */}
-      {message && (
-        <p className="text-center text-sm font-medium text-primary">{message}</p>
       )}
 
       {/* Liste des arrêts avec suivi */}
       <div className="space-y-0">
         {line.stops.map((stop, index) => {
           const isCurrent = stop.id === currentStopId;
-          const isDestination = stop.id === destinationStopId;
           const isPassed = currentIndex > index;
-          const isNext = index === currentIndex + 1;
+          const isNext = index === currentIndex + 1 && currentIndex >= 0;
 
           return (
             <div key={stop.id}>
-              <button
-                onClick={() => handleStopClick(stop.id)}
-                disabled={pending}
-                className={`w-full text-left transition disabled:cursor-not-allowed ${
-                  isCurrent || isDestination
+              <div
+                className={`panel-soft p-4 ${
+                  isCurrent
                     ? "panel-highlight shadow-elevated"
-                    : "panel-soft hover:shadow-card-hover"
-                } ${isPassed ? "opacity-60" : ""} p-4`}
+                    : isPassed
+                    ? "opacity-60"
+                    : ""
+                }`}
               >
                 <div className="flex items-center gap-4">
                   {/* Numéro d'arrêt */}
@@ -143,8 +97,6 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-lg font-bold transition ${
                       isCurrent
                         ? "bg-primary text-white scale-110 shadow-elevated"
-                        : isDestination
-                        ? "bg-accent text-white scale-110 shadow-elevated"
                         : isPassed
                         ? "bg-gray-200 text-gray-500"
                         : "bg-primary-light text-primary"
@@ -159,34 +111,29 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
                       className={`font-semibold transition ${
                         isCurrent
                           ? "text-xl text-primary"
-                          : isDestination
-                          ? "text-xl text-accent"
                           : "text-ink"
                       }`}
                     >
                       {stop.name}
                     </p>
-                    {isCurrent && (
+                    {currentIndex === 0 && index === 0 && (
                       <p className="mt-1 text-sm font-medium text-primary animate-pulse">
                         ● Arrêt actuel
                       </p>
                     )}
-                    {isDestination && (
-                      <p className="mt-1 text-sm font-medium text-accent animate-pulse">
-                        🎯 Destination
-                      </p>
-                    )}
-                    {isPassed && (
+                    {isPassed && currentIndex > 0 && (
                       <p className="mt-1 text-xs text-muted">✓ Passé</p>
                     )}
                   </div>
 
                   {/* Indicateur visuel */}
-                  {isNext && !isCurrent && (
-                    <div className="text-xs font-semibold text-primary">Prochain →</div>
+                  {isNext && (
+                    <div className="text-xs font-semibold text-primary animate-pulse">
+                      Prochain arrêt →
+                    </div>
                   )}
                 </div>
-              </button>
+              </div>
 
               {/* Flèche entre les arrêts */}
               {index < line.stops.length - 1 && (
@@ -216,8 +163,7 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
       {/* Instructions */}
       <div className="panel-soft bg-accent-light/50 p-4 text-center">
         <p className="text-sm text-muted">
-          💡 <strong>Instructions :</strong> Cliquez sur un arrêt pour mettre à jour votre position.
-          Le premier arrêt sélectionné devient votre position actuelle. Le second devient votre destination.
+          💡 Le chauffeur met à jour sa position en annonçant les arrêts depuis son espace.
         </p>
       </div>
     </div>

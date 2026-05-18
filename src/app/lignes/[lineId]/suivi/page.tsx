@@ -24,9 +24,7 @@ export default async function LineTrackingPage({ params }: Props) {
       <LiveTrackingClient 
         initialData={{
           line: data.line,
-          shiftId: data.shiftId,
           currentStopId: data.currentStopId,
-          destinationStopId: data.destinationStopId,
         }} 
       />
     </div>
