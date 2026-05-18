@@ -29,3 +29,26 @@ export async function getHomeNetworkData() {
     return { lineCount: 0, activeLines: [] };
   }
 }
+
+/** Réseau complet (lignes + arrêts) — page publique civils */
+export async function getPublicNetworkLines() {
+  try {
+    return await prisma.transportLine.findMany({
+      include: { stops: { orderBy: { order: "asc" } } },
+      orderBy: { number: "asc" },
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublicLineById(lineId: string) {
+  try {
+    return await prisma.transportLine.findUnique({
+      where: { id: lineId },
+      include: { stops: { orderBy: { order: "asc" } } },
+    });
+  } catch {
+    return null;
+  }
+}

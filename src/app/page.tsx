@@ -65,6 +65,9 @@ export default async function HomePage() {
               <Link href={espaceHref} className="btn-primary">
                 Espace personnel
               </Link>
+              <Link href="/lignes" className="btn-secondary">
+                Lignes & arrêts
+              </Link>
               <Link href="/inscription" className="btn-secondary">
                 Créer un compte
               </Link>
@@ -115,9 +118,10 @@ export default async function HomePage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {activeLines.map((line) => (
-              <div
+              <Link
                 key={line.id}
-                className="panel-soft flex items-center gap-4 p-4"
+                href={`/lignes/${line.id}`}
+                className="panel-soft flex items-center gap-4 p-4 transition hover:shadow-card-hover"
               >
                 <div
                   className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md text-lg font-bold text-white shadow-elevated"
@@ -128,8 +132,9 @@ export default async function HomePage() {
                 <div>
                   <p className="font-semibold text-ink">{line.name}</p>
                   <p className="text-sm text-muted">Conducteur : {line.driver}</p>
+                  <p className="mt-1 text-xs font-medium text-primary">Voir les arrêts →</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

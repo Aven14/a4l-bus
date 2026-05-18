@@ -1,13 +1,15 @@
 "use client";
 
 import { useId, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 type LineSpec = {
   top: number;
   widthPct: number;
-  leftPct: number;
   opacity: number;
   accent: boolean;
+  durationSec: number;
+  delaySec: number;
 };
 
 /** PRNG déterministe (même résultat SSR + client → pas d’erreur d’hydratation) */
@@ -29,10 +31,11 @@ function linesFromSeed(seedStr: string): LineSpec[] {
   const rand = mulberry32(seed);
   return Array.from({ length: 5 }, () => ({
     top: 8 + rand() * 82,
-    widthPct: 28 + rand() * 45,
-    leftPct: rand() * 52,
-    opacity: 0.14 + rand() * 0.18,
+    widthPct: 20 + rand() * 42,
+    opacity: 0.14 + rand() * 0.2,
     accent: rand() > 0.45,
+    durationSec: 16 + rand() * 32,
+    delaySec: -rand() * 24,
   }));
 }
 
@@ -45,18 +48,24 @@ export function TransportBackground() {
       {lines.map((line, i) => (
         <div
           key={i}
-          className="route-line"
-          style={{
-            top: `${line.top}%`,
-            left: `${line.leftPct}%`,
-            width: `${line.widthPct}%`,
-            opacity: line.opacity,
-            height: "3px",
-            background: line.accent
-              ? "linear-gradient(90deg, rgba(220, 38, 38, 0.75) 0%, rgba(220, 38, 38, 0.08) 85%, transparent 100%)"
-              : "linear-gradient(90deg, rgba(29, 78, 216, 0.7) 0%, rgba(29, 78, 216, 0.08) 85%, transparent 100%)",
-          }}
-        />
+          className="route-line-track"
+          style={{ top: `${line.top}%` }}
+        >
+          <div
+            className={cn(
+              "route-line-bar",
+              line.accent ? "route-line-bar--accent" : "route-line-bar--primary"
+            )}
+            style={{
+              width: `${line.widthPct}vw`,
+              minWidth: "120px",
+              maxWidth: "55vw",
+              opacity: line.opacity,
+              animationDuration: `${line.durationSec}s`,
+              animationDelay: `${line.delaySec}s`,
+            }}
+          />
+        </div>
       ))}
     </div>
   );

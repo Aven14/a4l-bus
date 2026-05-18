@@ -70,6 +70,15 @@ export default async function EspacePersonnelPage() {
         <p className="mt-2 text-sm text-muted">{formatRoles(user.roles)}</p>
       </div>
 
+      <section className="mt-6">
+        <Link
+          href="/lignes"
+          className="panel-soft block p-4 text-center font-semibold text-primary transition hover:shadow-card-hover"
+        >
+          Lignes du réseau — consulter les arrêts
+        </Link>
+      </section>
+
       {accessiblePanels.length > 0 ? (
         <section className="mt-8">
           <h2 className="mb-4 text-lg font-bold text-ink">Vos espaces</h2>
@@ -93,9 +102,14 @@ export default async function EspacePersonnelPage() {
             Un administrateur peut vous attribuer des rôles supplémentaires
             (chauffeur, contrôleur).
           </p>
-          <Link href="/" className="btn-secondary mt-4 inline-flex">
-            Retour à l&apos;accueil
-          </Link>
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <Link href="/lignes" className="btn-secondary inline-flex">
+              Lignes & arrêts
+            </Link>
+            <Link href="/" className="btn-secondary inline-flex">
+              Retour à l&apos;accueil
+            </Link>
+          </div>
         </div>
       )}
     </div>

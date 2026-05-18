@@ -14,8 +14,15 @@ type NavUser = {
   roles: UserRole[];
 };
 
-function linksForRoles(roles: UserRole[]) {
-  const links: { href: string; label: string }[] = [
+type NavItem = {
+  href: string;
+  label: string;
+  /** Actif aussi pour `/lignes/xxx` si href est `/lignes` */
+  matchPrefix?: string;
+};
+
+function linksForRoles(roles: UserRole[]): NavItem[] {
+  const links: NavItem[] = [
     { href: "/espace-personnel", label: "Mon espace" },
   ];
 
@@ -68,8 +75,9 @@ export function Navbar({ user }: { user: NavUser | null }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const leftLinks = [
+  const leftLinks: NavItem[] = [
     { href: "/", label: "Accueil" },
+    { href: "/lignes", label: "Lignes", matchPrefix: "/lignes" },
     ...(user ? linksForRoles(user.roles) : []),
   ];
 
@@ -88,7 +96,12 @@ export function Navbar({ user }: { user: NavUser | null }) {
               key={link.href}
               href={link.href}
               label={link.label}
-              active={pathname === link.href}
+              active={
+                link.matchPrefix
+                  ? pathname === link.href ||
+                    pathname.startsWith(`${link.matchPrefix}/`)
+                  : pathname === link.href
+              }
             />
           ))}
         </nav>
