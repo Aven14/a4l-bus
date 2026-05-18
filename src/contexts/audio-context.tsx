@@ -330,10 +330,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
 
       if (wasPlaying) {
-        await applySyncPosition(true);
+        // Reprendre la musique là où elle s'était arrêtée
         const restored = musicRef.current;
         if (restored) {
           restored.volume = 0;
+          // Reprendre la lecture
+          restored.play().catch(() => {});
+          // Fondu de retour
           await fadeVolume(restored, 0, userVolume, MUSIC_FADE_MS);
         }
       }

@@ -38,9 +38,6 @@ export function AnnouncementPanel({
     });
     channel.close();
 
-    // Jouer l'annonce localement
-    queueAnnouncement(stop.audioUrl, label);
-
     // Mettre à jour la position du chauffeur
     const result = await announceStop(stop.id);
     
