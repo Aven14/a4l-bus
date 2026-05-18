@@ -17,6 +17,7 @@ import {
   loadTracksWithDurations,
   type RadioTrackWithDuration,
 } from "@/lib/radio-sync";
+import { getPendingAnnouncements } from "@/actions/announcements";
 
 type AnnouncementItem = {
   audioPath: string;
@@ -86,6 +87,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const volumeRef = useRef(0.6);
   const isPlayingRef = useRef(false);
   const audioUnlockedRef = useRef(false);
+  const lastAnnouncementCheckRef = useRef<Date | null>(null);
 
   /** Débloque la lecture audio (politique navigateur — doit être appelé au clic) */
   const unlockAudio = useCallback(() => {
@@ -190,9 +192,30 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }, PLAYLIST_REFRESH_MS);
     })();
 
+    // Polling pour les annonces broadcast
+    const announcementPoller = setInterval(async () => {
+      try {
+        const announcements = await getPendingAnnouncements(lastAnnouncementCheckRef.current);
+        if (announcements.length > 0) {
+          lastAnnouncementCheckRef.current = new Date();
+          // Ajouter chaque annonce à la file
+          for (const ann of announcements) {
+            queueRef.current.push({
+              audioPath: ann.audioUrl,
+              label: ann.label,
+            });
+          }
+          processQueue();
+        }
+      } catch (err) {
+        console.error("Erreur polling annonces:", err);
+      }
+    }, 2000); // Vérifier toutes les 2 secondes
+
     return () => {
       clearInterval(syncTimer);
       clearInterval(refreshTimer);
+      clearInterval(announcementPoller);
       musicRef.current?.removeEventListener("ended", onEnded);
       musicRef.current?.pause();
       chimeRef.current?.pause();

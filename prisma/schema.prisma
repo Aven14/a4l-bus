@@ -92,3 +92,15 @@ model DriverShift {
   @@index([userId, endedAt])
   @@index([lineId, endedAt])
 }
+
+model LiveAnnouncement {
+  id         String   @id @default(cuid())
+  audioUrl   String
+  label      String
+  lineId     String
+  createdAt  DateTime @default(now())
+  played     Boolean  @default(false)
+  
+  @@index([createdAt])
+  @@index([played])
+}
