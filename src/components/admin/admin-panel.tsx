@@ -153,7 +153,7 @@ export function AdminPanel({
             placeholder="Nom arrêt"
             value={stopName}
             onChange={(e) => setStopName(e.target.value)}
-            className="input-field"
+            className="input-field sm:col-span-2"
           />
           <input
             type="text"
