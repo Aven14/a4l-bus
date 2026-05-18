@@ -76,9 +76,19 @@ export async function startShift(lineId: string) {
   }
 
   try {
-    await prisma.driverShift.create({
+    const shift = await prisma.driverShift.create({
       data: { userId: auth.user.id, lineId },
     });
+    
+    // Logger le début de service
+    const { createLog } = await import("@/actions/logs");
+    await createLog({
+      action: "START_SHIFT",
+      entity: "Shift",
+      entityId: shift.id,
+      details: `Ligne ${line.number} - ${line.name}`,
+    });
+    
     revalidatePath("/chauffeur");
     revalidatePath("/chauffeur/annonces");
     return { success: true };
@@ -114,6 +124,15 @@ export async function endShift() {
     await prisma.driverShift.update({
       where: { id: shift.id },
       data: { endedAt: now },
+    });
+
+    // Logger la fin de service
+    const { createLog } = await import("@/actions/logs");
+    await createLog({
+      action: "END_SHIFT",
+      entity: "Shift",
+      entityId: shift.id,
+      details: `${cancelledTickets} billet(s) annulé(s)`,
     });
 
     revalidatePath("/chauffeur");

@@ -6,6 +6,7 @@ import { hasRole } from "@/lib/roles";
 import { getActiveTickets, getTicketStats } from "@/actions/tickets";
 import { getAdminLines } from "@/actions/admin";
 import { getAllUsers } from "@/actions/users";
+import { getLogStats, getAdminLogs } from "@/actions/logs";
 
 export default async function AdminPage() {
   await ensureBootstrapAdmin();
@@ -13,20 +14,29 @@ export default async function AdminPage() {
   if (!user) redirect("/connexion?redirect=/admin");
   if (!hasRole(user.roles, "ADMIN")) redirect("/espace-personnel");
 
-  const [lines, tickets, stats, users] = await Promise.all([
+  const [lines, tickets, stats, users, logStats, logs] = await Promise.all([
     getAdminLines(),
     getActiveTickets(),
     getTicketStats(),
     getAllUsers(),
+    getLogStats(),
+    getAdminLogs(100),
   ]);
 
   return (
     <div className="page-enter mx-auto max-w-6xl px-4">
       <PageHeader
         title="Administration"
-        subtitle="Utilisateurs, lignes, arrêts et billets."
+        subtitle="Dashboard, utilisateurs, lignes, arrêts et billets."
       />
-      <AdminPanel lines={lines} tickets={tickets} stats={stats} users={users} />
+      <AdminPanel
+        lines={lines}
+        tickets={tickets}
+        stats={stats}
+        users={users}
+        logStats={logStats}
+        logs={logs}
+      />
     </div>
   );
 }

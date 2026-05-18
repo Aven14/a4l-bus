@@ -45,6 +45,14 @@ export async function registerUser(data: {
       },
     });
 
+    // Logger l'inscription
+    const { createLog } = await import("@/actions/logs");
+    await createLog({
+      action: "REGISTER",
+      entity: "User",
+      details: `Nouvel utilisateur: ${firstname} ${lastname} (${email})`,
+    });
+
     return {
       success: true,
       message:
@@ -69,6 +77,15 @@ export async function loginUser(email: string, password: string) {
   await destroySession();
   await createSession(user.id);
 
+  // Logger la connexion
+  const { createLog } = await import("@/actions/logs");
+  await createLog({
+    action: "LOGIN",
+    entity: "User",
+    entityId: user.id,
+    details: `${user.firstname} ${user.lastname}`,
+  });
+
   revalidatePath("/");
 
   return {
@@ -79,7 +96,21 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function logoutUser() {
+  const user = await getCurrentUser();
+  
   await destroySession();
+  
+  // Logger la déconnexion
+  if (user) {
+    const { createLog } = await import("@/actions/logs");
+    await createLog({
+      action: "LOGOUT",
+      entity: "User",
+      entityId: user.id,
+      details: `${user.firstname} ${user.lastname}`,
+    });
+  }
+  
   revalidatePath("/");
   return { success: true };
 }

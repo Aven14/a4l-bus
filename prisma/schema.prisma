@@ -25,6 +25,7 @@ model User {
   sessions      Session[]
   shifts        DriverShift[]
   issuedTickets Ticket[]      @relation("IssuedTickets")
+  activityLogs  ActivityLog[] @relation("UserLogs")
 
   @@index([roles])
 }
@@ -42,18 +43,21 @@ model Session {
 }
 
 model Ticket {
-  id         String   @id @default(cuid())
-  firstname  String
-  lastname   String
-  ticketType String
-  issuedById String?
-  issuedBy   User?    @relation("IssuedTickets", fields: [issuedById], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
-  expiresAt  DateTime
+  id          String    @id @default(cuid())
+  firstname   String
+  lastname    String
+  ticketType  String
+  issuedById  String?
+  issuedBy    User?     @relation("IssuedTickets", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime? @db.Timestamptz(3)
+  cancelled   Boolean   @default(false)
+  cancelledAt DateTime? @db.Timestamptz(3)
 
   @@index([firstname, lastname])
   @@index([expiresAt])
   @@index([issuedById])
+  @@index([cancelled])
 }
 
 model TransportLine {
@@ -94,13 +98,30 @@ model DriverShift {
 }
 
 model LiveAnnouncement {
-  id         String   @id @default(cuid())
-  audioUrl   String
-  label      String
-  lineId     String
-  createdAt  DateTime @default(now())
-  played     Boolean  @default(false)
+  id        String   @id @default(cuid())
+  audioUrl  String
+  label     String
+  lineId    String
+  createdAt DateTime @default(now())
+  played    Boolean  @default(false)
   
   @@index([createdAt])
   @@index([played])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation("UserLogs", fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String?
+  entityId  String?
+  details   String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entity])
 }

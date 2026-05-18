@@ -90,19 +90,21 @@ export const RADIO_TRACKS = [
   { id: "track-3", title: "CTB Radio — Réseau nuit", src: "/audio/music/track3.mp3" },
 ];
 
-export type TicketType = "Single Trip" | "Day Pass" | "Week Pass";
+export type TicketType = "Single Trip" | "Day Pass" | "Week Pass" | "Lifetime Pass";
 
-export const TICKET_TYPES: { value: TicketType; label: string; hours: number }[] = [
+export const TICKET_TYPES: { value: TicketType; label: string; hours: number | null }[] = [
   { value: "Single Trip", label: "Trajet unique", hours: 2 },
   { value: "Day Pass", label: "Pass journée", hours: 24 },
   { value: "Week Pass", label: "Pass semaine", hours: 24 * 7 },
+  { value: "Lifetime Pass", label: "Pass illimité", hours: null },
 ];
 
 export function getLineByNumber(num: number) {
   return TRANSPORT_LINES.find((l) => l.number === num);
 }
 
-export function getExpirationDate(ticketType: TicketType): Date {
-  const hours = TICKET_TYPES.find((t) => t.value === ticketType)?.hours ?? 2;
-  return new Date(Date.now() + hours * 60 * 60 * 1000);
+export function getExpirationDate(ticketType: TicketType): Date | null {
+  const ticketDef = TICKET_TYPES.find((t) => t.value === ticketType);
+  if (!ticketDef || ticketDef.hours === null) return null; // Lifetime = pas d'expiration
+  return new Date(Date.now() + ticketDef.hours * 60 * 60 * 1000);
 }

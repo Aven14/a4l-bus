@@ -9,8 +9,9 @@ import {
   updateStop,
   seedTransportLines,
 } from "@/actions/admin";
-import { deleteTicket } from "@/actions/tickets";
+import { deleteTicket, cancelTicket, cleanupExpiredTickets } from "@/actions/tickets";
 import { UsersPanel } from "@/components/admin/users-panel";
+import { Dashboard } from "@/components/admin/admin-dashboard";
 import { formatDate } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { UserRole } from "@prisma/client";
@@ -49,16 +50,39 @@ type UserRow = {
   createdAt: Date;
 };
 
+type LogStats = {
+  loginsByDay: Array<{ date: Date; count: bigint }>;
+  ticketsByDay: Array<{ date: Date; count: bigint }>;
+  ticketsByType: Array<{ ticketType: string; _count: number }>;
+  usersByRole: Array<{ roles: string[]; _count: number }>;
+  radioActivations: number;
+};
+
+type ActivityLog = {
+  id: string;
+  userId: string | null;
+  user: { firstname: string; lastname: string; email: string } | null;
+  action: string;
+  entity: string | null;
+  entityId: string | null;
+  details: string | null;
+  createdAt: Date;
+};
+
 export function AdminPanel({
   lines,
   tickets,
   stats,
   users,
+  logStats,
+  logs,
 }: {
   lines: LineWithStops[];
   tickets: TicketRow[];
   stats: Stats;
   users: UserRow[];
+  logStats: LogStats | null;
+  logs: ActivityLog[];
 }) {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -76,16 +100,36 @@ export function AdminPanel({
   const [editStopAudio, setEditStopAudio] = useState("");
   const [editStopOrder, setEditStopOrder] = useState(0);
 
+  // Tab principal
+  const [mainTab, setMainTab] = useState<"dashboard" | "lines" | "tickets" | "users">("dashboard");
+
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Total billets" value={stats.total} />
-        <StatCard label="Actifs" value={stats.active} accent />
-        <StatCard label="Expirés" value={stats.expired} />
+      {/* Navigation principale */}
+      <div className="flex gap-2 border-b border-line pb-2">
+        {[
+          { key: "dashboard", label: "Dashboard" },
+          { key: "lines", label: "Lignes & Arrêts" },
+          { key: "tickets", label: "Billets" },
+          { key: "users", label: "Utilisateurs" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setMainTab(tab.key as any)}
+            className={`rounded-md px-4 py-2 font-medium transition ${
+              mainTab === tab.key
+                ? "bg-primary text-white"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <UsersPanel users={users} />
+      {mainTab === "dashboard" && <Dashboard stats={logStats} logs={logs} />}
 
+      {mainTab === "lines" && (
       <section className="panel p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-primary">Lignes & arrêts</h2>
@@ -321,9 +365,27 @@ export function AdminPanel({
           ))}
         </div>
       </section>
+      )}
 
+      {mainTab === "tickets" && (
       <section className="panel p-6">
-        <h2 className="mb-4 text-lg font-bold text-primary">Billets actifs</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-primary">Titres de transport</h2>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await cleanupExpiredTickets();
+                setMessage(result.success ? `${result.count} billets supprimés.` : result.error ?? "Erreur");
+                if (result.success) window.location.reload();
+              })
+            }
+          >
+            Nettoyer expirés (+7 jours)
+          </button>
+        </div>
         {tickets.length === 0 ? (
           <p className="text-muted">Aucun billet actif.</p>
         ) : (
@@ -348,6 +410,18 @@ export function AdminPanel({
                     <td className="py-2 text-right">
                       <button
                         type="button"
+                        className="text-yellow-600 hover:opacity-80 mr-3"
+                        onClick={() =>
+                          startTransition(async () => {
+                            await cancelTicket(t.id);
+                            window.location.reload();
+                          })
+                        }
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
                         className="text-accent hover:opacity-80"
                         onClick={() =>
                           startTransition(async () => {
@@ -366,6 +440,9 @@ export function AdminPanel({
           </div>
         )}
       </section>
+      )}
+
+      {mainTab === "users" && <UsersPanel users={users} />}
 
       {message && (
         <p className="text-center text-sm text-primary">{message}</p>
