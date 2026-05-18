@@ -13,7 +13,6 @@ import { deleteTicket, cancelTicket, cleanupExpiredTickets } from "@/actions/tic
 import { UsersPanel } from "@/components/admin/users-panel";
 import { Dashboard } from "@/components/admin/admin-dashboard";
 import { formatDate } from "@/lib/utils";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { UserRole } from "@prisma/client";
 
 type LineWithStops = {
@@ -72,14 +71,12 @@ type ActivityLog = {
 export function AdminPanel({
   lines,
   tickets,
-  stats,
   users,
   logStats,
   logs,
 }: {
   lines: LineWithStops[];
   tickets: TicketRow[];
-  stats: Stats;
   users: UserRow[];
   logStats: LogStats | null;
   logs: ActivityLog[];
@@ -103,19 +100,21 @@ export function AdminPanel({
   // Tab principal
   const [mainTab, setMainTab] = useState<"dashboard" | "lines" | "tickets" | "users">("dashboard");
 
+  const tabs = [
+    { key: "dashboard" as const, label: "Dashboard" },
+    { key: "lines" as const, label: "Lignes & Arrêts" },
+    { key: "tickets" as const, label: "Billets" },
+    { key: "users" as const, label: "Utilisateurs" },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Navigation principale */}
       <div className="flex gap-2 border-b border-line pb-2">
-        {[
-          { key: "dashboard", label: "Dashboard" },
-          { key: "lines", label: "Lignes & Arrêts" },
-          { key: "tickets", label: "Billets" },
-          { key: "users", label: "Utilisateurs" },
-        ].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setMainTab(tab.key as any)}
+            onClick={() => setMainTab(tab.key)}
             className={`rounded-md px-4 py-2 font-medium transition ${
               mainTab === tab.key
                 ? "bg-primary text-white"
@@ -447,25 +446,6 @@ export function AdminPanel({
       {message && (
         <p className="text-center text-sm text-primary">{message}</p>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: number;
-  accent?: boolean;
-}) {
-  return (
-    <div className="panel p-4 text-center">
-      <p className={`text-2xl font-bold ${accent ? "text-primary" : "text-ink"}`}>
-        {value}
-      </p>
-      <p className="text-xs text-muted">{label}</p>
     </div>
   );
 }

@@ -84,7 +84,7 @@ export function Dashboard({
               : "bg-surface text-muted hover:text-ink"
           }`}
         >
-          Vue d'ensemble
+          Vue d&apos;ensemble
         </button>
         <button
           onClick={() => setActiveTab("logs")}
@@ -94,7 +94,7 @@ export function Dashboard({
               : "bg-surface text-muted hover:text-ink"
           }`}
         >
-          Logs d'activité
+          Logs d&apos;activité
         </button>
       </div>
 
@@ -238,7 +238,7 @@ export function Dashboard({
         /* Logs */
         <div className="panel p-4">
           <h3 className="mb-4 text-lg font-bold text-primary">
-            Logs d'activité ({logs.length})
+            Logs d&apos;activité ({logs.length})
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

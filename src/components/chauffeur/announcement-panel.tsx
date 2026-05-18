@@ -20,7 +20,7 @@ export function AnnouncementPanel({
   lineName: string;
   stops: Stop[];
 }) {
-  const { queueAnnouncement, isAnnouncing, announcementError } = useAudio();
+  const { isAnnouncing, announcementError } = useAudio();
   const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 

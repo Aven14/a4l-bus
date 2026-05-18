@@ -17,7 +17,6 @@ import {
   loadTracksWithDurations,
   type RadioTrackWithDuration,
 } from "@/lib/radio-sync";
-import { getPendingAnnouncements } from "@/actions/announcements";
 
 type AnnouncementItem = {
   audioPath: string;
@@ -75,7 +74,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolumeState] = useState(0.6);
-  const [trackIndex, setTrackIndex] = useState(0);
+  const [, setTrackIndex] = useState(0);
   const [currentTrackTitle, setCurrentTrackTitle] = useState("Cross Track Bus Radio");
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [announcementLabel, setAnnouncementLabel] = useState<string | null>(null);
@@ -87,7 +86,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const volumeRef = useRef(0.6);
   const isPlayingRef = useRef(false);
   const audioUnlockedRef = useRef(false);
-  const lastAnnouncementCheckRef = useRef<Date | null>(null);
 
   /** Débloque la lecture audio (politique navigateur — doit être appelé au clic) */
   const unlockAudio = useCallback(() => {
