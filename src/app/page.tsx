@@ -68,9 +68,11 @@ export default async function HomePage() {
               <Link href="/lignes" className="btn-secondary">
                 Lignes & arrêts
               </Link>
-              <Link href="/inscription" className="btn-secondary">
-                Créer un compte
-              </Link>
+              {!user && (
+                <Link href="/inscription" className="btn-secondary">
+                  Créer un compte
+                </Link>
+              )}
             </div>
           </div>
 
