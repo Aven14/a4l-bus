@@ -6,6 +6,7 @@ import {
   deleteLine,
   addStop,
   deleteStop,
+  updateStop,
   seedTransportLines,
 } from "@/actions/admin";
 import { deleteTicket } from "@/actions/tickets";
@@ -68,6 +69,12 @@ export function AdminPanel({
   const [stopLineId, setStopLineId] = useState("");
   const [stopName, setStopName] = useState("");
   const [stopAudio, setStopAudio] = useState("");
+
+  // États pour l'édition d'arrêts
+  const [editingStopId, setEditingStopId] = useState<string | null>(null);
+  const [editStopName, setEditStopName] = useState("");
+  const [editStopAudio, setEditStopAudio] = useState("");
+  const [editStopOrder, setEditStopOrder] = useState(0);
 
   return (
     <div className="space-y-8">
@@ -204,24 +211,109 @@ export function AdminPanel({
                   Supprimer ligne
                 </button>
               </div>
-              <ul className="space-y-1 text-sm text-muted">
+              <ul className="space-y-2 text-sm text-muted">
                 {line.stops.map((stop) => (
-                  <li key={stop.id} className="flex justify-between">
-                    <span>
-                      {stop.name} — <code className="text-xs">{stop.audioUrl}</code>
-                    </span>
-                    <button
-                      type="button"
-                      className="text-accent hover:opacity-80"
-                      onClick={() =>
-                        startTransition(async () => {
-                          await deleteStop(stop.id);
-                          window.location.reload();
-                        })
-                      }
-                    >
-                      ×
-                    </button>
+                  <li key={stop.id} className="rounded-md bg-surface p-3 shadow-card">
+                    {editingStopId === stop.id ? (
+                      // Mode édition
+                      <div className="space-y-2">
+                        <div className="grid gap-2 sm:grid-cols-4">
+                          <input
+                            type="text"
+                            value={editStopName}
+                            onChange={(e) => setEditStopName(e.target.value)}
+                            className="input-field sm:col-span-2"
+                            placeholder="Nom"
+                          />
+                          <input
+                            type="text"
+                            value={editStopAudio}
+                            onChange={(e) => setEditStopAudio(e.target.value)}
+                            className="input-field"
+                            placeholder="Audio"
+                          />
+                          <input
+                            type="number"
+                            value={editStopOrder}
+                            onChange={(e) => setEditStopOrder(parseInt(e.target.value))}
+                            className="input-field"
+                            placeholder="Ordre"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="btn-primary text-xs"
+                            onClick={() =>
+                              startTransition(async () => {
+                                const slug = editStopName
+                                  .toLowerCase()
+                                  .normalize("NFD")
+                                  .replace(/[\u0300-\u036f]/g, "")
+                                  .replace(/[^a-z0-9]+/g, "-")
+                                  .replace(/^-|-$/g, "");
+                                await updateStop(stop.id, {
+                                  name: editStopName,
+                                  slug,
+                                  audioUrl: editStopAudio,
+                                  order: editStopOrder,
+                                });
+                                setEditingStopId(null);
+                                window.location.reload();
+                              })
+                            }
+                          >
+                            ✓ Sauvegarder
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary text-xs"
+                            onClick={() => setEditingStopId(null)}
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Mode affichage
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <span className="font-medium text-ink">{stop.name}</span>
+                          <div className="mt-1 flex gap-3 text-xs">
+                            <span className="text-muted">
+                              Ordre : {stop.order}
+                            </span>
+                            <code className="text-primary">{stop.audioUrl}</code>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="text-primary hover:opacity-80"
+                            onClick={() => {
+                              setEditingStopId(stop.id);
+                              setEditStopName(stop.name);
+                              setEditStopAudio(stop.audioUrl);
+                              setEditStopOrder(stop.order);
+                            }}
+                          >
+                            ✏️ Modifier
+                          </button>
+                          <button
+                            type="button"
+                            className="text-accent hover:opacity-80"
+                            onClick={() =>
+                              startTransition(async () => {
+                                await deleteStop(stop.id);
+                                window.location.reload();
+                              })
+                            }
+                          >
+                            × Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
