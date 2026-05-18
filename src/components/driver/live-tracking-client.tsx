@@ -64,21 +64,11 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
         </div>
       </div>
 
-      {/* Indicateur de position */}
-      {currentIndex === 0 && (
-        <div className="panel-soft bg-gradient-to-r from-primary-light to-white p-4 text-center">
-          <p className="text-sm font-semibold text-primary">
-            🚌 Bus actuellement au départ : <span className="text-lg font-bold">{line.stops[0]?.name}</span>
-          </p>
-        </div>
-      )}
-
       {/* Liste des arrêts avec suivi */}
       <div className="space-y-0">
         {line.stops.map((stop, index) => {
           const isCurrent = stop.id === currentStopId;
-          const isPassed = currentIndex > index;
-          const isNext = index === currentIndex + 1 && currentIndex >= 0;
+          const isPassed = currentStopId && line.stops.findIndex((s) => s.id === currentStopId) > index;
 
           return (
             <div key={stop.id}>
@@ -116,22 +106,10 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
                     >
                       {stop.name}
                     </p>
-                    {currentIndex === 0 && index === 0 && (
-                      <p className="mt-1 text-sm font-medium text-primary animate-pulse">
-                        ● Arrêt actuel
-                      </p>
-                    )}
-                    {isPassed && currentIndex > 0 && (
+                    {isPassed && (
                       <p className="mt-1 text-xs text-muted">✓ Passé</p>
                     )}
                   </div>
-
-                  {/* Indicateur visuel */}
-                  {isNext && (
-                    <div className="text-xs font-semibold text-primary animate-pulse">
-                      Prochain arrêt →
-                    </div>
-                  )}
                 </div>
               </div>
 
