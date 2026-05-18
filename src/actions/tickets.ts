@@ -18,7 +18,7 @@ export type TicketResult = {
     lastname: string;
     ticketType: string;
     createdAt: Date;
-    expiresAt: Date;
+    expiresAt: Date | null;
   };
 };
 
