@@ -73,7 +73,7 @@ export async function getLogStats() {
       radioActivations,
     ] = await Promise.all([
       // Connexions par jour (7 derniers jours)
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT DATE("createdAt") as date, COUNT(*) as count
         FROM "ActivityLog"
         WHERE "action" = 'LOGIN' AND "createdAt" >= ${sevenDaysAgo}
@@ -81,7 +81,7 @@ export async function getLogStats() {
         ORDER BY date ASC
       `,
       // Billets créés par jour
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT DATE("createdAt") as date, COUNT(*) as count
         FROM "Ticket"
         WHERE "createdAt" >= ${sevenDaysAgo}
