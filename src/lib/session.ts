@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { User, UserRole } from "@prisma/client";
 import { ADMIN_COOKIE, hashToken, isAdminAuthenticated } from "@/lib/auth";
+import { hasAnyRole, hasRole } from "@/lib/roles";
 import { randomBytes } from "crypto";
 
 export const SESSION_COOKIE = "ctb_session";
@@ -9,7 +10,7 @@ const SESSION_DAYS = 14;
 
 export type SessionUser = Pick<
   User,
-  "id" | "email" | "firstname" | "lastname" | "role"
+  "id" | "email" | "firstname" | "lastname" | "roles"
 >;
 
 export async function createSession(userId: string): Promise<string> {
@@ -57,7 +58,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
           email: true,
           firstname: true,
           lastname: true,
-          role: true,
+          roles: true,
         },
       },
     },
@@ -74,7 +75,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 export async function hasAdminAccess(): Promise<boolean> {
   if (await isAdminAuthenticated()) return true;
   const user = await getCurrentUser();
-  return user?.role === "ADMIN";
+  return user ? hasRole(user.roles, "ADMIN") : false;
 }
 
 export async function requireUser(
@@ -82,7 +83,7 @@ export async function requireUser(
 ): Promise<{ user: SessionUser } | { error: string }> {
   const user = await getCurrentUser();
   if (!user) return { error: "Non connecté." };
-  if (roles && !roles.includes(user.role)) {
+  if (roles && !hasAnyRole(user.roles, roles)) {
     return { error: "Accès refusé." };
   }
   return { user };
@@ -100,10 +101,12 @@ export async function ensureBootstrapAdmin(): Promise<void> {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    if (existing.role !== "ADMIN") {
+    if (!hasRole(existing.roles, "ADMIN")) {
       await prisma.user.update({
         where: { id: existing.id },
-        data: { role: "ADMIN" },
+        data: {
+          roles: [...new Set([...existing.roles, "ADMIN" as const])],
+        },
       });
     }
     return;
@@ -116,7 +119,7 @@ export async function ensureBootstrapAdmin(): Promise<void> {
       passwordHash: await hashPassword(password),
       firstname: "Admin",
       lastname: "Cross Track Bus",
-      role: "ADMIN",
+      roles: ["ADMIN"],
     },
   });
 }

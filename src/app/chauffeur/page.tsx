@@ -1,15 +1,23 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { hasAnyRole, hasRole } from "@/lib/roles";
 import { getLinesWithAvailability } from "@/actions/shifts";
 import { ShiftDashboard } from "@/components/chauffeur/shift-dashboard";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function ChauffeurPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/connexion");
-  if (user.role === "PENDING") redirect("/compte-en-attente");
-  if (user.role === "CONTROLLER") redirect("/controleur");
-  if (user.role !== "DRIVER" && user.role !== "ADMIN") redirect("/connexion");
+  if (!user) redirect("/connexion?redirect=/chauffeur");
+  if (!hasAnyRole(user.roles, ["DRIVER", "ADMIN"])) {
+    redirect("/espace-personnel");
+  }
+  if (
+    hasRole(user.roles, "CONTROLLER") &&
+    !hasRole(user.roles, "DRIVER") &&
+    !hasRole(user.roles, "ADMIN")
+  ) {
+    redirect("/controleur");
+  }
 
   const data = await getLinesWithAvailability();
   if ("error" in data && data.error) {

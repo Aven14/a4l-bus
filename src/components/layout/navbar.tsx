@@ -5,34 +5,41 @@ import { usePathname, useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { logoutUser } from "@/actions/auth";
 import { cn } from "@/lib/utils";
+import { hasRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 
 type NavUser = {
   firstname: string;
   lastname: string;
-  role: UserRole;
+  roles: UserRole[];
 };
 
 const publicLinks = [{ href: "/", label: "Accueil" }];
 
-function roleLinks(role: UserRole) {
-  switch (role) {
-    case "DRIVER":
-      return [
-        { href: "/chauffeur", label: "Mon service" },
-        { href: "/chauffeur/annonces", label: "Annonces" },
-      ];
-    case "CONTROLLER":
-      return [{ href: "/controleur", label: "Contrôle billets" }];
-    case "ADMIN":
-      return [
-        { href: "/chauffeur", label: "Chauffeur" },
-        { href: "/controleur", label: "Contrôleur" },
-        { href: "/admin", label: "Admin" },
-      ];
-    default:
-      return [];
+function linksForRoles(roles: UserRole[]) {
+  const links: { href: string; label: string }[] = [
+    { href: "/espace-personnel", label: "Mon espace" },
+  ];
+
+  if (hasRole(roles, "DRIVER") || hasRole(roles, "ADMIN")) {
+    links.push(
+      { href: "/chauffeur", label: "Mon service" },
+      { href: "/chauffeur/annonces", label: "Annonces" }
+    );
   }
+  if (hasRole(roles, "CONTROLLER") || hasRole(roles, "ADMIN")) {
+    links.push({ href: "/controleur", label: "Contrôle" });
+  }
+  if (hasRole(roles, "ADMIN")) {
+    links.push({ href: "/admin", label: "Admin" });
+  }
+
+  const seen = new Set<string>();
+  return links.filter((l) => {
+    if (seen.has(l.href)) return false;
+    seen.add(l.href);
+    return true;
+  });
 }
 
 export function Navbar({ user }: { user: NavUser | null }) {
@@ -41,7 +48,7 @@ export function Navbar({ user }: { user: NavUser | null }) {
 
   const links = [
     ...publicLinks,
-    ...(user ? roleLinks(user.role) : []),
+    ...(user ? linksForRoles(user.roles) : []),
     ...(!user
       ? [
           { href: "/connexion", label: "Connexion" },

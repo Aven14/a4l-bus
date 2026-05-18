@@ -8,24 +8,25 @@ datasource db {
 }
 
 enum UserRole {
-  PENDING
+  CIVIL
   DRIVER
   CONTROLLER
   ADMIN
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String
-  firstname    String
-  lastname     String
-  role         UserRole      @default(PENDING)
-  createdAt    DateTime      @default(now())
-  sessions     Session[]
-  shifts       DriverShift[]
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  firstname     String
+  lastname      String
+  roles         UserRole[]    @default([CIVIL])
+  createdAt     DateTime      @default(now())
+  sessions      Session[]
+  shifts        DriverShift[]
+  issuedTickets Ticket[]      @relation("IssuedTickets")
 
-  @@index([role])
+  @@index([roles])
 }
 
 model Session {
@@ -45,11 +46,14 @@ model Ticket {
   firstname  String
   lastname   String
   ticketType String
+  issuedById String?
+  issuedBy   User?    @relation("IssuedTickets", fields: [issuedById], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   expiresAt  DateTime
 
   @@index([firstname, lastname])
   @@index([expiresAt])
+  @@index([issuedById])
 }
 
 model TransportLine {

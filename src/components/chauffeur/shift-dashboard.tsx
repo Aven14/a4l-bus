@@ -52,8 +52,15 @@ export function ShiftDashboard({
     setMessage(null);
     startTransition(async () => {
       const res = await endShift();
-      if (res.success) router.refresh();
-      else setMessage(res.error ?? "Erreur");
+      if (res.success) {
+        const n = res.cancelledTickets ?? 0;
+        setMessage(
+          n > 0
+            ? `Service terminé. ${n} billet${n > 1 ? "s" : ""} trajet unique annulé${n > 1 ? "s" : ""}.`
+            : "Service terminé."
+        );
+        router.refresh();
+      } else setMessage(res.error ?? "Erreur");
     });
   };
 

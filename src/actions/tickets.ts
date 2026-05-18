@@ -51,6 +51,7 @@ export async function createTicket(
         lastname: ln,
         ticketType: ticketType as TicketType,
         expiresAt: getExpirationDate(ticketType as TicketType),
+        issuedById: auth.user.id,
       },
     });
 
@@ -128,7 +129,6 @@ export async function getAllTickets(search?: string) {
   if ("error" in auth) return [];
 
   const q = search?.trim();
-  const now = new Date();
 
   try {
     return await prisma.ticket.findMany({

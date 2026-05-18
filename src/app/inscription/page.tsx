@@ -7,7 +7,7 @@ export default function InscriptionPage() {
     <div className="page-enter mx-auto max-w-md px-4">
       <PageHeader
         title="Inscription"
-        subtitle="Créez un compte. Un admin vous attribuera le rôle chauffeur ou contrôleur."
+        subtitle="Compte Civil par défaut. Précisez votre identité RP et votre vrai e-mail."
       />
       <RegisterForm />
       <p className="mt-6 text-center text-sm text-muted">

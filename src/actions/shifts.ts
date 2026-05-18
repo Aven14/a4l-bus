@@ -98,14 +98,34 @@ export async function endShift() {
     return { success: false, error: "Aucun service en cours." };
   }
 
+  const now = new Date();
+
   try {
+    const { count: cancelledTickets } = await prisma.ticket.updateMany({
+      where: {
+        issuedById: auth.user.id,
+        ticketType: "Single Trip",
+        createdAt: { gte: shift.startedAt },
+        expiresAt: { gt: now },
+      },
+      data: { expiresAt: now },
+    });
+
     await prisma.driverShift.update({
       where: { id: shift.id },
-      data: { endedAt: new Date() },
+      data: { endedAt: now },
     });
+
     revalidatePath("/chauffeur");
     revalidatePath("/chauffeur/annonces");
-    return { success: true };
+    revalidatePath("/chauffeur/billets");
+    revalidatePath("/controleur");
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      cancelledTickets,
+    };
   } catch {
     return { success: false, error: "Impossible de terminer le service." };
   }

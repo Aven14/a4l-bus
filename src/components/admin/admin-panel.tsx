@@ -46,7 +46,7 @@ type UserRow = {
   email: string;
   firstname: string;
   lastname: string;
-  role: UserRole;
+  roles: UserRole[];
   createdAt: Date;
 };
 

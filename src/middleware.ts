@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/chauffeur", "/controleur", "/admin"];
+const PROTECTED_PREFIXES = [
+  "/chauffeur",
+  "/controleur",
+  "/admin",
+  "/espace-personnel",
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,5 +29,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/chauffeur/:path*", "/controleur/:path*", "/admin/:path*"],
+  matcher: [
+    "/chauffeur/:path*",
+    "/controleur/:path*",
+    "/admin/:path*",
+    "/espace-personnel",
+  ],
 };

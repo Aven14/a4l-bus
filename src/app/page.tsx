@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getHomeNetworkData } from "@/actions/lines";
+import { getCurrentUser } from "@/lib/session";
 
 const services = [
   {
@@ -35,7 +36,11 @@ const services = [
 ];
 
 export default async function HomePage() {
-  const { lineCount, activeLines } = await getHomeNetworkData();
+  const [user, { lineCount, activeLines }] = await Promise.all([
+    getCurrentUser(),
+    getHomeNetworkData(),
+  ]);
+  const espaceHref = user ? "/espace-personnel" : "/connexion";
 
   return (
     <div className="page-enter mx-auto max-w-6xl px-4">
@@ -57,7 +62,7 @@ export default async function HomePage() {
               Site du CTB avec radio et annonces des lignes
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/connexion" className="btn-primary">
+              <Link href={espaceHref} className="btn-primary">
                 Espace personnel
               </Link>
               <Link href="/inscription" className="btn-secondary">

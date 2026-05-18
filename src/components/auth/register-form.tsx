@@ -35,18 +35,22 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="panel space-y-4 p-6">
+      <p className="text-sm text-muted">
+        Utilisez votre identité RP pour le nom et prénom. L&apos;email doit être
+        votre vraie adresse pour la gestion du compte.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label-caps mb-1 block">Prénom</label>
+          <label className="label-caps mb-1 block">Prénom RP</label>
           <input name="firstname" className="input-field" required />
         </div>
         <div>
-          <label className="label-caps mb-1 block">Nom</label>
+          <label className="label-caps mb-1 block">Nom RP</label>
           <input name="lastname" className="input-field" required />
         </div>
       </div>
       <div>
-        <label className="label-caps mb-1 block">Email</label>
+        <label className="label-caps mb-1 block">Vrai e-mail</label>
         <input name="email" type="email" className="input-field" required />
       </div>
       <div>

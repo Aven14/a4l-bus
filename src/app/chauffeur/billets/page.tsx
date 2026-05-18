@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { hasAnyRole } from "@/lib/roles";
 import { getMyActiveShift } from "@/actions/shifts";
 import { TicketForm } from "@/components/tickets/ticket-form";
 import { PageHeader } from "@/components/ui/page-header";
@@ -8,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 export default async function ChauffeurBilletsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
-  if (user.role !== "DRIVER" && user.role !== "ADMIN") redirect("/chauffeur");
+  if (!hasAnyRole(user.roles, ["DRIVER", "ADMIN"])) redirect("/espace-personnel");
 
   const shift = await getMyActiveShift();
   if (!shift) redirect("/chauffeur");

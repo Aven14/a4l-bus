@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { getLoginRedirect } from "@/lib/roles";
 import {
   createSession,
   destroySession,
@@ -40,14 +41,14 @@ export async function registerUser(data: {
         passwordHash: await hashPassword(password),
         firstname,
         lastname,
-        role: "PENDING",
+        roles: ["CIVIL"],
       },
     });
 
     return {
       success: true,
       message:
-        "Compte créé. Un administrateur doit vous attribuer un rôle (chauffeur ou contrôleur).",
+        "Compte créé avec le rôle Civil. Connectez-vous pour accéder à votre espace personnel.",
     };
   } catch {
     return { success: false, error: "Erreur lors de l'inscription." };
@@ -72,15 +73,8 @@ export async function loginUser(email: string, password: string) {
 
   return {
     success: true,
-    role: user.role,
-    redirect:
-      user.role === "DRIVER"
-        ? "/chauffeur"
-        : user.role === "CONTROLLER"
-          ? "/controleur"
-          : user.role === "ADMIN"
-            ? "/admin"
-            : "/compte-en-attente",
+    roles: user.roles,
+    redirect: getLoginRedirect(user.roles),
   };
 }
 
