@@ -192,40 +192,29 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }, PLAYLIST_REFRESH_MS);
     })();
 
-    // Polling pour les annonces broadcast
-    const announcementPoller = setInterval(async () => {
-      try {
-        const announcements = await getPendingAnnouncements(lastAnnouncementCheckRef.current);
-        if (announcements.length > 0) {
-          lastAnnouncementCheckRef.current = new Date();
-          
-          // Vérifier que l'audio est débloqué
-          if (!audioUnlockedRef.current) {
-            return;
-          }
-          
-          // Ajouter chaque annonce à la file
-          for (const ann of announcements) {
-            queueRef.current.push({
-              audioPath: ann.audioUrl,
-              label: ann.label,
-            });
-          }
-          
-          // Forcer le traitement de la file
-          if (!processingRef.current) {
-            processQueue();
-          }
-        }
-      } catch (err) {
-        console.error("Erreur polling annonces:", err);
+    // Écouter les annonces broadcast via BroadcastChannel
+    const channel = new BroadcastChannel("crossbus-announcements");
+    
+    channel.onmessage = (event) => {
+      const { audioPath, label } = event.data;
+      
+      if (!audioUnlockedRef.current) {
+        return;
       }
-    }, 2000); // Vérifier toutes les 2 secondes
+      
+      // Ajouter à la file
+      queueRef.current.push({ audioPath, label });
+      
+      // Traiter la file
+      if (!processingRef.current) {
+        processQueue();
+      }
+    };
 
     return () => {
       clearInterval(syncTimer);
       clearInterval(refreshTimer);
-      clearInterval(announcementPoller);
+      channel.close();
       musicRef.current?.removeEventListener("ended", onEnded);
       musicRef.current?.pause();
       chimeRef.current?.pause();

@@ -175,24 +175,16 @@ export async function announceStop(stopId: string) {
       },
     });
 
-    // Créer une annonce broadcast pour tous les utilisateurs
-    await prisma.liveAnnouncement.create({
-      data: {
-        audioUrl: stop.audioUrl,
+    // Retourner les données de l'annonce pour diffusion côté client
+    return {
+      success: true,
+      announcement: {
+        audioPath: stop.audioUrl,
         label: `Arrêt ${stop.order + 1} — ${stop.name}`,
-        lineId: shift.lineId,
       },
-    });
-
-    revalidatePath("/lignes");
-    revalidatePath("/chauffeur/annonces");
-
-    return { 
-      success: true, 
-      currentStop: stop.name,
     };
   } catch {
-    return { success: false, error: "Impossible d'annoncer l'arrêt." };
+    return { success: false, error: "Erreur lors de l'annonce." };
   }
 }
 

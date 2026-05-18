@@ -28,17 +28,24 @@ export function AnnouncementPanel({
     setPending(stop.id);
     setMessage(null);
 
-    // Jouer l'annonce audio
-    queueAnnouncement(
-      stop.audioUrl,
-      `Arrêt ${index + 1} — ${stop.name}`
-    );
+    const label = `Arrêt ${index + 1} — ${stop.name}`;
+
+    // Diffuser l'annonce à tous les onglets via BroadcastChannel
+    const channel = new BroadcastChannel("crossbus-announcements");
+    channel.postMessage({
+      audioPath: stop.audioUrl,
+      label,
+    });
+    channel.close();
+
+    // Jouer l'annonce localement
+    queueAnnouncement(stop.audioUrl, label);
 
     // Mettre à jour la position du chauffeur
     const result = await announceStop(stop.id);
     
     if (result.success) {
-      setMessage(`✓ Annonce : ${result.currentStop}`);
+      setMessage(`✓ Annonce diffusée : ${label}`);
     }
 
     setPending(null);
