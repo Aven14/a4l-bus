@@ -7,6 +7,7 @@ import { logoutUser } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 import { hasRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
+import { useMemo } from "react";
 
 type NavUser = {
   firstname: string;
@@ -59,6 +60,7 @@ function NavLink({
   return (
     <Link
       href={href}
+      prefetch={true}
       className={cn(
         "shrink-0 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3",
         active
@@ -75,11 +77,13 @@ export function Navbar({ user }: { user: NavUser | null }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const leftLinks: NavItem[] = [
-    { href: "/", label: "Accueil" },
-    { href: "/lignes", label: "Lignes", matchPrefix: "/lignes" },
-    ...(user ? linksForRoles(user.roles) : []),
-  ];
+  const leftLinks = useMemo<NavItem[]>(() => {
+    return [
+      { href: "/", label: "Accueil" },
+      { href: "/lignes", label: "Lignes", matchPrefix: "/lignes" },
+      ...(user ? linksForRoles(user.roles) : []),
+    ];
+  }, [user]);
 
   const handleLogout = async () => {
     await logoutUser();
@@ -109,6 +113,7 @@ export function Navbar({ user }: { user: NavUser | null }) {
         <div className="shrink-0 justify-self-center px-1">
           <Link
             href="/"
+            prefetch={true}
             className="block transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <BrandLogo variant="navbarCenter" compact />
@@ -120,12 +125,14 @@ export function Navbar({ user }: { user: NavUser | null }) {
             <>
               <Link
                 href="/connexion"
+                prefetch={true}
                 className="shrink-0 rounded-md px-2 py-2 text-xs font-semibold text-primary hover:bg-primary-light/50 sm:px-3 sm:text-sm"
               >
                 Connexion
               </Link>
               <Link
                 href="/inscription"
+                prefetch={true}
                 className="btn-primary shrink-0 px-2.5 py-2 text-xs sm:px-4 sm:text-sm"
               >
                 Inscription
