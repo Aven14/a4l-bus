@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   addLine,
   deleteLine,
@@ -97,8 +98,16 @@ export function AdminPanel({
   const [editStopAudio, setEditStopAudio] = useState("");
   const [editStopOrder, setEditStopOrder] = useState(0);
 
-  // Tab principal
-  const [mainTab, setMainTab] = useState<"dashboard" | "lines" | "tickets" | "users">("dashboard");
+  // Tab principal - lire depuis l'URL si disponible
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialTab = (searchParams.get("tab") as "dashboard" | "lines" | "tickets" | "users") || "lines";
+  const [mainTab, setMainTab] = useState<"dashboard" | "lines" | "tickets" | "users">(initialTab);
+
+  // Mettre à jour l'URL quand on change d'onglet
+  useEffect(() => {
+    router.replace(`/admin?tab=${mainTab}`, { scroll: false });
+  }, [mainTab, router]);
 
   const tabs = [
     { key: "dashboard" as const, label: "Dashboard" },
@@ -140,7 +149,7 @@ export function AdminPanel({
               startTransition(async () => {
                 const res = await seedTransportLines();
                 setMessage(res.success ? "Lignes importées." : res.error ?? "Erreur");
-                if (res.success) window.location.reload();
+                if (res.success) window.location.href = `/admin?tab=${mainTab}`;
               })
             }
           >
@@ -177,7 +186,7 @@ export function AdminPanel({
             onClick={() =>
               startTransition(async () => {
                 await addLine(parseInt(lineNum, 10), lineName, lineColor);
-                window.location.reload();
+                window.location.href = `/admin?tab=${mainTab}`;
               })
             }
           >
@@ -225,8 +234,13 @@ export function AdminPanel({
                   .replace(/[\u0300-\u036f]/g, "")
                   .replace(/[^a-z0-9]+/g, "-")
                   .replace(/^-|-$/g, "");
-                await addStop(stopLineId, stopName, slug, stopAudio, 0);
-                window.location.reload();
+                
+                // Calculer le prochain ordre automatiquement
+                const selectedLine = lines.find(l => l.id === stopLineId);
+                const nextOrder = selectedLine ? selectedLine.stops.length : 0;
+                
+                await addStop(stopLineId, stopName, slug, stopAudio, nextOrder);
+                window.location.href = `/admin?tab=${mainTab}`;
               })
             }
           >
@@ -247,7 +261,7 @@ export function AdminPanel({
                   onClick={() =>
                     startTransition(async () => {
                       await deleteLine(line.id);
-                      window.location.reload();
+                      window.location.href = `/admin?tab=${mainTab}`;
                     })
                   }
                 >
@@ -302,7 +316,7 @@ export function AdminPanel({
                                   order: editStopOrder,
                                 });
                                 setEditingStopId(null);
-                                window.location.reload();
+                                window.location.href = `/admin?tab=${mainTab}`;
                               })
                             }
                           >
@@ -348,7 +362,7 @@ export function AdminPanel({
                             onClick={() =>
                               startTransition(async () => {
                                 await deleteStop(stop.id);
-                                window.location.reload();
+                                window.location.href = `/admin?tab=${mainTab}`;
                               })
                             }
                           >
@@ -378,7 +392,7 @@ export function AdminPanel({
               startTransition(async () => {
                 const result = await cleanupExpiredTickets();
                 setMessage(result.success ? `${result.count} billets supprimés.` : result.error ?? "Erreur");
-                if (result.success) window.location.reload();
+                if (result.success) window.location.href = `/admin?tab=${mainTab}`;
               })
             }
           >
@@ -413,7 +427,7 @@ export function AdminPanel({
                         onClick={() =>
                           startTransition(async () => {
                             await cancelTicket(t.id);
-                            window.location.reload();
+                            window.location.href = `/admin?tab=${mainTab}`;
                           })
                         }
                       >
@@ -425,7 +439,7 @@ export function AdminPanel({
                         onClick={() =>
                           startTransition(async () => {
                             await deleteTicket(t.id);
-                            window.location.reload();
+                            window.location.href = `/admin?tab=${mainTab}`;
                           })
                         }
                       >
