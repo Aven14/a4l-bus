@@ -1,72 +1,98 @@
 "use client";
 
-import { useId, useMemo } from "react";
-import { cn } from "@/lib/utils";
-
-type LineSpec = {
-  top: number;
-  widthPct: number;
-  opacity: number;
-  accent: boolean;
-  durationSec: number;
-  delaySec: number;
-};
-
-/** PRNG déterministe (même résultat SSR + client → pas d’erreur d’hydratation) */
-function mulberry32(seed: number) {
-  return function () {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function linesFromSeed(seedStr: string): LineSpec[] {
-  let seed = 0;
-  for (let i = 0; i < seedStr.length; i++) {
-    seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
-  }
-  if (seed === 0) seed = 1;
-  const rand = mulberry32(seed);
-  return Array.from({ length: 5 }, () => ({
-    top: 8 + rand() * 82,
-    widthPct: 20 + rand() * 42,
-    opacity: 0.14 + rand() * 0.2,
-    accent: rand() > 0.45,
-    durationSec: 16 + rand() * 32,
-    delaySec: -rand() * 24,
-  }));
-}
+import { useEffect, useRef } from "react";
 
 export function TransportBackground() {
-  const id = useId();
-  const lines = useMemo(() => linesFromSeed(id), [id]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let lines: Array<{
+      y: number;
+      x: number;
+      speed: number;
+      length: number;
+      color: string;
+    }> = [];
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initLines();
+    };
+
+    const initLines = () => {
+      lines = [];
+      const count = 8;
+      const colors = [
+        "rgba(29, 78, 216, 0.3)",
+        "rgba(220, 38, 38, 0.3)",
+        "rgba(29, 78, 216, 0.2)",
+      ];
+
+      for (let i = 0; i < count; i++) {
+        lines.push({
+          y: (canvas.height / (count + 1)) * (i + 1),
+          x: Math.random() * canvas.width * -1,
+          speed: 1 + Math.random() * 2,
+          length: 80 + Math.random() * 120,
+          color: colors[Math.floor(Math.random() * colors.length)],
+        });
+      }
+    };
+
+    const draw = () => {
+      // Dessiner le gradient de fond
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, "#f8fafc");
+      gradient.addColorStop(0.5, "#f4f7fc");
+      gradient.addColorStop(1, "#eef2ff");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      lines.forEach((line) => {
+        ctx.beginPath();
+        ctx.moveTo(line.x, line.y);
+        ctx.lineTo(line.x + line.length, line.y);
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Déplacer la ligne
+        line.x += line.speed;
+
+        // Réinitialiser si hors écran
+        if (line.x > canvas.width + line.length) {
+          line.x = -line.length;
+          line.speed = 1 + Math.random() * 2;
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   return (
-    <div className="transport-bg" aria-hidden>
-      {lines.map((line, i) => (
-        <div
-          key={i}
-          className="route-line-track"
-          style={{ top: `${line.top}%` }}
-        >
-          <div
-            className={cn(
-              "route-line-bar",
-              line.accent ? "route-line-bar--accent" : "route-line-bar--primary"
-            )}
-            style={{
-              width: `${line.widthPct}vw`,
-              minWidth: "120px",
-              maxWidth: "55vw",
-              opacity: line.opacity,
-              animationDuration: `${line.durationSec}s`,
-              animationDelay: `${line.delaySec}s`,
-            }}
-          />
-        </div>
-      ))}
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 z-0 pointer-events-none"
+      aria-hidden="true"
+    />
   );
 }

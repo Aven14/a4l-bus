@@ -43,76 +43,7 @@ body {
   max-width: 100vw;
   pointer-events: none;
   overflow: hidden;
-  /* Couleurs en dur : les variables @theme ne sont pas toujours résolues ici */
   background: linear-gradient(180deg, #f8fafc 0%, #f4f7fc 50%, #eef2ff 100%);
-}
-
-/* Traits animés (fond) : bandeau pleine largeur, barre défile de gauche à droite */
-.route-line-track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 4px;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.route-line-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  border-radius: 2px;
-  will-change: transform;
-  animation-name: route-line-drift;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-.route-line-bar--primary {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(29, 78, 216, 0.08) 10%,
-    rgba(29, 78, 216, 0.4) 30%,
-    rgba(29, 78, 216, 0.8) 50%,
-    rgba(29, 78, 216, 0.4) 70%,
-    rgba(29, 78, 216, 0.08) 90%,
-    transparent 100%
-  );
-  box-shadow: 0 0 8px rgba(29, 78, 216, 0.3);
-}
-
-.route-line-bar--accent {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(220, 38, 38, 0.08) 10%,
-    rgba(220, 38, 38, 0.4) 30%,
-    rgba(220, 38, 38, 0.7) 50%,
-    rgba(220, 38, 38, 0.4) 70%,
-    rgba(220, 38, 38, 0.08) 90%,
-    transparent 100%
-  );
-  box-shadow: 0 0 8px rgba(220, 38, 38, 0.3);
-}
-
-@keyframes route-line-drift {
-  0% {
-    transform: translateX(-200px);
-  }
-  100% {
-    transform: translateX(2000px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .route-line-bar {
-    animation: none;
-    transform: translateX(0);
-    opacity: 0.12;
-  }
 }
 
 .shadow-elevated {
