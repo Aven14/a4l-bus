@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getPublicNetworkLines } from "@/actions/lines";
+import { PageHeader } from "@/components/ui/page-header";
 
-
-export const revalidate = 60; from "@/components/ui/page-header";
+// Cache pendant 60 secondes
+export const revalidate = 60;
 
 export default async function LignesPage() {
   const lines = await getPublicNetworkLines();
