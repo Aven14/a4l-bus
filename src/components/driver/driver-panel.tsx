@@ -6,12 +6,12 @@ import { TRANSPORT_LINES, type LineDef } from "@/lib/transport-data";
 import { cn } from "@/lib/utils";
 
 export function DriverPanel() {
-  const { queueAnnouncement, isAnnouncing } = useAudio();
+  const { playAnnouncement, isAnnouncing } = useAudio();
   const [selectedLine, setSelectedLine] = useState<LineDef | null>(null);
   const [lastTriggered, setLastTriggered] = useState<string | null>(null);
 
   const handleAnnounce = (audioPath: string, label: string) => {
-    queueAnnouncement(audioPath, label);
+    playAnnouncement(audioPath, label);
     setLastTriggered(label);
   };
 
