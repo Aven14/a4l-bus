@@ -13,7 +13,6 @@ import {
 import { deleteTicket, cancelTicket, cleanupExpiredTickets } from "@/actions/tickets";
 import { UsersPanel } from "@/components/admin/users-panel";
 import { Dashboard } from "@/components/admin/admin-dashboard";
-import { MusicManager } from "@/components/admin/music-manager";
 import { formatDate } from "@/lib/utils";
 import type { UserRole } from "@prisma/client";
 
@@ -113,7 +112,6 @@ export function AdminPanel({
     { key: "lines" as const, label: "Lignes & Arrêts" },
     { key: "tickets" as const, label: "Billets" },
     { key: "users" as const, label: "Utilisateurs" },
-    { key: "music" as const, label: "Musiques" },
   ];
 
   return (
@@ -456,8 +454,6 @@ export function AdminPanel({
       )}
 
       {mainTab === "users" && <UsersPanel users={users} />}
-
-      {mainTab === "music" && <MusicManager />}
 
       {message && (
         <p className="text-center text-sm text-primary">{message}</p>

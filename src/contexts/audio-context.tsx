@@ -17,6 +17,8 @@ interface AudioContextType {
   isAnnouncing: boolean;
   announcementLabel: string | null;
   announcementError: string | null;
+  volume: number;
+  setVolume: (vol: number) => void;
   playRadio: () => void;
   pauseRadio: () => void;
   playAnnouncement: (
@@ -34,8 +36,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [announcementLabel, setAnnouncementLabel] = useState<string | null>(null);
   const [announcementError, setAnnouncementError] = useState<string | null>(null);
+  const [volume, setVolume] = useState(0.5);
 
   const musicRef = useRef<HTMLAudioElement | null>(null);
+  // Set volume on music element when it changes
+  useEffect(() => {
+    if (musicRef.current) {
+      musicRef.current.volume = volume;
+    }
+  }, [volume]);
+
   const tracksRef = useRef<RadioTrackConfig[]>([]);
   const trackIndexRef = useRef(0);
   const isPlayingRef = useRef(false);
@@ -107,7 +117,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Lazy sync - check every 10 seconds, only sync if > 10s difference
+  // Aggressive sync - check every 3 seconds, sync if > 5s difference
   useEffect(() => {
     if (!isPlaying) {
       if (syncIntervalRef.current) {
@@ -130,27 +140,30 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         if (!music || tracks.length === 0) return;
 
-        // Only switch track if server changed
+        // If server track changed, switch immediately
         if (serverState.trackIndex !== trackIndexRef.current) {
           const newTrack = tracks[serverState.trackIndex];
           if (newTrack) {
             trackIndexRef.current = serverState.trackIndex;
             music.src = newTrack.src;
-            music.currentTime = 0;
+            music.currentTime = serverState.position || 0;
+            if (serverState.isPlaying) {
+              music.play().catch(() => {});
+            }
             setCurrentTrackTitle(newTrack.title);
           }
           return;
         }
 
-        // Only sync position if difference > 10 seconds (avoid constant interruptions)
+        // Sync position if difference > 5 seconds
         const timeDiff = Math.abs(music.currentTime - serverState.position);
-        if (timeDiff > 10 && serverState.position > 0) {
+        if (timeDiff > 5) {
           music.currentTime = serverState.position;
         }
       } catch (error) {
         console.error("[Radio] Sync error:", error);
       }
-    }, 10000); // Check every 10 seconds
+    }, 3000);
 
     return () => {
       if (syncIntervalRef.current) {
@@ -303,6 +316,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         isAnnouncing,
         announcementLabel,
         announcementError,
+        volume,
+        setVolume,
         playRadio,
         pauseRadio,
         playAnnouncement,

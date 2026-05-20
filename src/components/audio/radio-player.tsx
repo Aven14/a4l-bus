@@ -1,18 +1,17 @@
 "use client";
 
 import { useAudio } from "@/contexts/audio-context";
-import { useState } from "react";
 
 export function RadioPlayer() {
   const {
     isPlaying,
     isAnnouncing,
     currentTrackTitle,
+    volume,
+    setVolume,
     playRadio,
     pauseRadio,
   } = useAudio();
-
-  const [volume, setVolume] = useState(0.5);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -21,18 +20,6 @@ export function RadioPlayer() {
       playRadio();
     }
   };
-
-  // Apply volume to all audio elements when it changes
-  useState(() => {
-    if (typeof window !== "undefined") {
-      const interval = setInterval(() => {
-        document.querySelectorAll("audio").forEach((audio) => {
-          audio.volume = volume;
-        });
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  });
 
   return (
     <div
@@ -75,14 +62,7 @@ export function RadioPlayer() {
           max={1}
           step={0.01}
           value={volume}
-          onChange={(e) => {
-            const vol = parseFloat(e.target.value);
-            setVolume(vol);
-            // Apply to all audio elements on page
-            document.querySelectorAll("audio").forEach((audio) => {
-              audio.volume = vol;
-            });
-          }}
+          onChange={(e) => setVolume(parseFloat(e.target.value))}
           className="h-1 w-24 cursor-pointer accent-primary md:w-32"
           aria-label="Volume"
         />
