@@ -23,7 +23,7 @@ export function RadioPlayer() {
         <button
           type="button"
           onClick={togglePlay}
-          disabled={isAnnouncing || !radioReady}
+          disabled={isAnnouncing}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-white shadow-elevated transition hover:bg-primary-dark disabled:opacity-40"
           aria-label={isPlaying ? "Pause" : "Lecture"}
         >
@@ -43,7 +43,7 @@ export function RadioPlayer() {
             Radio/Annonce Cross Track Bus
           </p>
           <p className="text-xs text-muted">
-            Radio en direct disponible 24h/24
+            {!radioReady ? "Aucune musique disponible" : "Radio en direct disponible 24h/24"}
           </p>
         </div>
 
