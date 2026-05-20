@@ -9,8 +9,16 @@ export async function fetchRadioTracks(): Promise<RadioTrackConfig[]> {
     const res = await fetch("/api/radio/tracks", { cache: "no-store" });
     if (!res.ok) return [];
 
-    const data = (await res.json()) as ApiTrack[];
-    if (!Array.isArray(data) || data.length === 0) return [];
+    const json = await res.json();
+    // L'API retourne { tracks: [...] } ou directement [...]
+    const data: ApiTrack[] = Array.isArray(json) ? json : (json.tracks || []);
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn("[Radio] No tracks found");
+      return [];
+    }
+
+    console.log(`[Radio] Found ${data.length} tracks`);
 
     const filenames = data.map((t) => t.filename ?? t.src.split("/").pop() ?? "");
     const seed = getPlaylistSeed(filenames);
@@ -21,7 +29,8 @@ export async function fetchRadioTracks(): Promise<RadioTrackConfig[]> {
     );
 
     return shuffled;
-  } catch {
+  } catch (err) {
+    console.error("[Radio] Error fetching tracks:", err);
     return [];
   }
 }

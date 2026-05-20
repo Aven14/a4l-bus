@@ -109,15 +109,23 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadPlaylist = useCallback(async () => {
-    const config = await fetchRadioTracks();
-    const loaded = await loadTracksWithDurations(config);
-    tracksRef.current = loaded;
-    setRadioReady(loaded.length > 0);
-    if (loaded.length > 0) {
-      const { trackIndex: idx } = getSyncedPosition(loaded);
-      setCurrentTrackTitle(loaded[idx]?.title ?? loaded[0].title);
+    try {
+      const config = await fetchRadioTracks();
+      console.log("[Radio] Tracks loaded:", config.length);
+      const loaded = await loadTracksWithDurations(config);
+      console.log("[Radio] Tracks with durations:", loaded.length);
+      tracksRef.current = loaded;
+      setRadioReady(loaded.length > 0);
+      if (loaded.length > 0) {
+        const { trackIndex: idx } = getSyncedPosition(loaded);
+        setCurrentTrackTitle(loaded[idx]?.title ?? loaded[0].title);
+      }
+      return loaded;
+    } catch (err) {
+      console.error("[Radio] Error loading playlist:", err);
+      setRadioReady(false);
+      return [];
     }
-    return loaded;
   }, []);
 
   const applySyncPosition = useCallback(async (play = false) => {

@@ -12,13 +12,15 @@ export async function GET() {
 
     const files = fs.readdirSync(musicDir);
     const tracks = files
-      .filter((file) => file.endsWith(".mp3"))
+      .filter((file) => file.endsWith(".mp3") && file !== ".gitkeep")
       .map((file) => {
         const filePath = path.join(musicDir, file);
         const stats = fs.statSync(filePath);
         const name = file.replace(".mp3", "").replace(/_/g, " ").replace(/-/g, " ");
         
         return {
+          title: name,
+          src: `/audio/music/${file}`,
           filename: file,
           name: name,
           path: `/audio/music/${file}`,
