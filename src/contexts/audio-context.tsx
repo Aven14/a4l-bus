@@ -117,7 +117,45 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // NO polling - sync only on play
+  // Sync position every 5 seconds to server
+  useEffect(() => {
+    if (!isPlaying) {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Save position to server every 5 seconds
+    syncIntervalRef.current = setInterval(async () => {
+      if (processingRef.current || isAnnouncingRef.current) return;
+
+      const music = musicRef.current;
+      if (!music || music.paused) return;
+
+      try {
+        await fetch("/api/radio/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            trackIndex: trackIndexRef.current,
+            position: music.currentTime,
+            isPlaying: true,
+          }),
+        });
+      } catch (error) {
+        console.error("[Radio] Sync error:", error);
+      }
+    }, 5000);
+
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+    };
+  }, [isPlaying]);
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
@@ -137,43 +175,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const serverState = await res.json();
         
-        // If server has no state (first player), initialize it
-        if (!serverState.startedAt) {
-          trackIndexRef.current = 0;
-          const track = tracks[0];
-          music.src = track.src;
-          music.currentTime = 0;
-          setCurrentTrackTitle(track.title);
-
-          // Initialize server state with current time
-          await fetch("/api/radio/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              trackIndex: 0,
-              position: 0,
-              isPlaying: true,
-              startedAt: Date.now(),
-            }),
-          });
-        } else {
-          // Sync to server state (follow the first player)
+        // If server has a position, sync to it (follow master)
+        if (serverState.position > 0 && serverState.isPlaying) {
           trackIndexRef.current = serverState.trackIndex || 0;
           const track = tracks[trackIndexRef.current];
           
           if (track) {
             music.src = track.src;
-            // Calculate position based on when first player started
-            const elapsed = (Date.now() - serverState.startedAt) / 1000;
-            
-            // Wait for track to load to get duration
-            music.addEventListener('loadedmetadata', () => {
-              const trackDuration = music.duration || 0;
-              music.currentTime = elapsed % trackDuration;
-            }, { once: true });
-            
+            music.currentTime = serverState.position;
             setCurrentTrackTitle(track.title);
           }
+        } else {
+          // First player - start from beginning
+          trackIndexRef.current = 0;
+          const track = tracks[0];
+          music.src = track.src;
+          music.currentTime = 0;
+          setCurrentTrackTitle(track.title);
         }
       } else {
         const track = tracks[0];
