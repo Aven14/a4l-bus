@@ -40,8 +40,6 @@ type TicketRow = {
   expiresAt: Date;
 };
 
-type Stats = { total: number; active: number; expired: number };
-
 type UserRow = {
   id: string;
   email: string;

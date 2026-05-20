@@ -15,6 +15,8 @@ interface AudioContextType {
   isPlaying: boolean;
   currentTrackTitle: string | null;
   isAnnouncing: boolean;
+  announcementLabel: string | null;
+  announcementError: string | null;
   playRadio: () => void;
   pauseRadio: () => void;
   playAnnouncement: (
@@ -26,25 +28,18 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
-let globalMusic: HTMLAudioElement | null = null;
-let globalTracks: RadioTrackConfig[] = [];
-let globalIsPlaying = false;
-let globalIsAnnouncing = false;
-
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTrackTitle, setCurrentTrackTitle] = useState<string | null>(
-    null
-  );
+  const [currentTrackTitle, setCurrentTrackTitle] = useState<string | null>(null);
   const [isAnnouncing, setIsAnnouncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">(
-    "idle"
-  );
+  const [announcementLabel, setAnnouncementLabel] = useState<string | null>(null);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
 
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const tracksRef = useRef<RadioTrackConfig[]>([]);
   const trackIndexRef = useRef(0);
   const isPlayingRef = useRef(false);
+  const isAnnouncingRef = useRef(false);
   const processingRef = useRef(false);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -54,16 +49,40 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const audio = new Audio();
       audio.preload = "auto";
       musicRef.current = audio;
-      globalMusic = audio;
 
-      audio.addEventListener("ended", handleTrackEnded);
+      const onEnded = () => {
+        if (processingRef.current || isAnnouncingRef.current) return;
+
+        const tracks = tracksRef.current;
+        const music = musicRef.current;
+        if (!music || tracks.length === 0) return;
+
+        const nextIndex = (trackIndexRef.current + 1) % tracks.length;
+        trackIndexRef.current = nextIndex;
+
+        const nextTrack = tracks[nextIndex];
+        music.src = nextTrack.src;
+
+        fetch("/api/radio/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            trackIndex: nextIndex,
+            position: 0,
+            isPlaying: true,
+          }),
+        }).catch(() => {});
+
+        music
+          .play()
+          .then(() => {
+            setCurrentTrackTitle(nextTrack.title);
+          })
+          .catch(() => {});
+      };
+
+      audio.addEventListener("ended", onEnded);
     }
-
-    return () => {
-      if (musicRef.current) {
-        musicRef.current.removeEventListener("ended", handleTrackEnded);
-      }
-    };
   }, []);
 
   // Load tracks
@@ -76,8 +95,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (!mounted || tracks.length === 0) return;
 
         tracksRef.current = tracks;
-        globalTracks = tracks;
-
         console.log(`[Radio] ${tracks.length} tracks loaded`);
       } catch (error) {
         console.error("[Radio] Failed to load tracks:", error);
@@ -100,10 +117,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setSyncStatus("syncing");
-
     syncIntervalRef.current = setInterval(async () => {
-      if (processingRef.current || globalIsAnnouncing) return;
+      if (processingRef.current || isAnnouncingRef.current) return;
 
       try {
         const res = await fetch("/api/radio/sync", { cache: "no-store" });
@@ -135,11 +150,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         if (timeDiff > 3 && serverState.position > 0) {
           music.currentTime = serverState.position;
         }
-
-        setSyncStatus("idle");
       } catch (error) {
         console.error("[Radio] Sync error:", error);
-        setSyncStatus("error");
       }
     }, 2000);
 
@@ -150,38 +162,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [isPlaying]);
-
-  const handleTrackEnded = useCallback(() => {
-    if (processingRef.current || globalIsAnnouncing) return;
-
-    const tracks = tracksRef.current;
-    const music = musicRef.current;
-    if (!music || tracks.length === 0) return;
-
-    const nextIndex = (trackIndexRef.current + 1) % tracks.length;
-    trackIndexRef.current = nextIndex;
-
-    const nextTrack = tracks[nextIndex];
-    music.src = nextTrack.src;
-
-    // Update server state
-    fetch("/api/radio/sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        trackIndex: nextIndex,
-        position: 0,
-        isPlaying: true,
-      }),
-    }).catch(() => {});
-
-    music
-      .play()
-      .then(() => {
-        setCurrentTrackTitle(nextTrack.title);
-      })
-      .catch(() => {});
-  }, []);
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
@@ -194,10 +174,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     processingRef.current = true;
     isPlayingRef.current = true;
-    globalIsPlaying = true;
 
     try {
-      // Get current server state
       const res = await fetch("/api/radio/sync", { cache: "no-store" });
       if (res.ok) {
         const serverState = await res.json();
@@ -210,14 +188,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           setCurrentTrackTitle(track.title);
         }
 
-        // Mark as playing on server
         await fetch("/api/radio/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isPlaying: true }),
         });
       } else {
-        // Fallback: start from beginning
         const track = tracks[0];
         music.src = track.src;
         music.currentTime = 0;
@@ -235,14 +211,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const pauseRadio = useCallback(async () => {
     const music = musicRef.current;
-
     if (!music) return;
 
     processingRef.current = true;
     isPlayingRef.current = false;
-    globalIsPlaying = false;
 
-    // Save position to server
     if (tracksRef.current.length > 0) {
       fetch("/api/radio/sync", {
         method: "POST",
@@ -264,17 +237,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const music = musicRef.current;
       if (!music) return;
 
-      globalIsAnnouncing = true;
+      isAnnouncingRef.current = true;
       setIsAnnouncing(true);
+      setAnnouncementLabel(label);
+      setAnnouncementError(null);
 
-      // Save current position
       const currentPosition = music.currentTime;
       const wasPlaying = !music.paused;
 
       try {
         music.pause();
 
-        // Pause on server
         await fetch("/api/radio/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -292,33 +265,32 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             await tempAudio.play();
           } catch (err) {
             console.error("[Announcement] Failed to play:", err);
-            globalIsAnnouncing = false;
+            isAnnouncingRef.current = false;
             setIsAnnouncing(false);
-            if (wasPlaying && globalIsPlaying) {
+            setAnnouncementLabel(null);
+            if (wasPlaying && isPlayingRef.current) {
               playRadio();
             }
           }
         }, { once: true });
 
-        tempAudio.addEventListener(
-          "ended",
-          async () => {
-            globalIsAnnouncing = false;
-            setIsAnnouncing(false);
-            callback?.();
+        tempAudio.addEventListener("ended", async () => {
+          isAnnouncingRef.current = false;
+          setIsAnnouncing(false);
+          setAnnouncementLabel(null);
+          callback?.();
 
-            // Resume music if it was playing
-            if (wasPlaying && globalIsPlaying) {
-              await playRadio();
-            }
-          },
-          { once: true }
-        );
+          if (wasPlaying && isPlayingRef.current) {
+            await playRadio();
+          }
+        }, { once: true });
       } catch (error) {
         console.error("[Announcement] Error:", error);
-        globalIsAnnouncing = false;
+        isAnnouncingRef.current = false;
         setIsAnnouncing(false);
-        if (wasPlaying && globalIsPlaying) {
+        setAnnouncementError("Erreur lors de l'annonce");
+        setAnnouncementLabel(null);
+        if (wasPlaying && isPlayingRef.current) {
           playRadio();
         }
       }
@@ -332,6 +304,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         isPlaying,
         currentTrackTitle,
         isAnnouncing,
+        announcementLabel,
+        announcementError,
         playRadio,
         pauseRadio,
         playAnnouncement,
