@@ -87,6 +87,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const isPlayingRef = useRef(false);
   const audioUnlockedRef = useRef(false);
   const isAnnouncingRef = useRef(false);
+  const lastAnnouncementEndRef = useRef(0);
 
   /** Débloque la lecture audio (politique navigateur — doit être appelé au clic) */
   const unlockAudio = useCallback(() => {
@@ -176,8 +177,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (loaded.length > 0) {
         await applySyncPosition(false);
         syncTimer = setInterval(() => {
-          // Ne pas synchroniser si une annonce est en cours
-          if (isPlayingRef.current && !processingRef.current && !isAnnouncingRef.current) {
+          // Ne pas synchroniser si une annonce est en cours ou vient de finir (15s)
+          const timeSinceAnnouncement = Date.now() - lastAnnouncementEndRef.current;
+          if (isPlayingRef.current && !processingRef.current && !isAnnouncingRef.current && timeSinceAnnouncement > 15000) {
             void applySyncPosition(true);
           }
         }, SYNC_INTERVAL_MS);
@@ -334,6 +336,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         // Reprendre la musique là où elle s'était arrêtée
         const restored = musicRef.current;
         if (restored) {
+          // Sauvegarder le temps de reprise pour bloquer la synchro
+          lastAnnouncementEndRef.current = Date.now();
+          
           // Petit délai pour éviter la coupure
           await new Promise((r) => setTimeout(r, 100));
           restored.volume = 0;
