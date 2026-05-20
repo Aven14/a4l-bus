@@ -163,13 +163,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isPlayingRef.current = true;
 
     try {
-      // Just start playing - heartbeat already initialized the radio
+      // Check if radio is already running
       const res = await fetch("/api/radio/heartbeat", { cache: "no-store" });
       
       if (res.ok) {
         const serverState = await res.json();
         
         if (serverState.playing) {
+          // Radio already running - sync to it
           trackIndexRef.current = serverState.trackIndex || 0;
           const track = tracks[trackIndexRef.current];
           
@@ -179,7 +180,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             setCurrentTrackTitle(track.title);
           }
         } else {
-          // Start from beginning
+          // First time - initialize radio
+          await fetch("/api/radio/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              trackIndex: 0,
+              position: 0,
+              isPlaying: true,
+              startedAt: Date.now(),
+            }),
+          });
+          
           trackIndexRef.current = 0;
           const track = tracks[0];
           music.src = track.src;

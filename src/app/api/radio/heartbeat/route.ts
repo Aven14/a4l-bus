@@ -28,19 +28,4 @@ export async function GET() {
   });
 }
 
-// Route pour initialiser/démarrer la radio
-export async function POST() {
-  const state = await getRadioState();
-  
-  if (!state.startedAt) {
-    // Première activation
-    await updateRadioState({
-      trackIndex: 0,
-      position: 0,
-      isPlaying: true,
-      startedAt: Date.now(),
-    });
-  }
-
-  return NextResponse.json({ success: true });
-}
+// PLUS BESOIN DE POST - La radio se lance via playRadio
