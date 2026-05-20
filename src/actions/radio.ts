@@ -41,7 +41,7 @@ export async function updateRadioState(data: {
 }
 
 // Calculer la position actuelle basée sur le startedAt et les durées des pistes
-export function calculateServerState(state: any, trackDurations: number[]) {
+export function calculateServerState(state: { isPlaying: boolean; startedAt: number | null; trackIndex: number; position: number }, trackDurations: number[]) {
   if (!state.isPlaying || state.startedAt === null) {
     return {
       trackIndex: state.trackIndex,
