@@ -131,6 +131,7 @@ model RadioState {
   trackIndex Int      @default(0)
   position   Float    @default(0)
   isPlaying  Boolean  @default(false)
+  startedAt  Int?
   lastSync   DateTime @default(now())
 
   @@index([lastSync])

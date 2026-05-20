@@ -117,61 +117,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Aggressive sync - check every 3 seconds, sync if > 5s difference
-  useEffect(() => {
-    if (!isPlaying) {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-      return;
-    }
-
-    syncIntervalRef.current = setInterval(async () => {
-      if (processingRef.current || isAnnouncingRef.current) return;
-
-      try {
-        const res = await fetch("/api/radio/sync", { cache: "no-store" });
-        if (!res.ok) return;
-
-        const serverState = await res.json();
-        const music = musicRef.current;
-        const tracks = tracksRef.current;
-
-        if (!music || tracks.length === 0) return;
-
-        // If server track changed, switch immediately
-        if (serverState.trackIndex !== trackIndexRef.current) {
-          const newTrack = tracks[serverState.trackIndex];
-          if (newTrack) {
-            trackIndexRef.current = serverState.trackIndex;
-            music.src = newTrack.src;
-            music.currentTime = serverState.position || 0;
-            if (serverState.isPlaying) {
-              music.play().catch(() => {});
-            }
-            setCurrentTrackTitle(newTrack.title);
-          }
-          return;
-        }
-
-        // Sync position if difference > 5 seconds
-        const timeDiff = Math.abs(music.currentTime - serverState.position);
-        if (timeDiff > 5) {
-          music.currentTime = serverState.position;
-        }
-      } catch (error) {
-        console.error("[Radio] Sync error:", error);
-      }
-    }, 3000);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-    };
-  }, [isPlaying]);
+  // NO polling - sync only on play
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
@@ -187,22 +133,48 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const res = await fetch("/api/radio/sync", { cache: "no-store" });
+      
       if (res.ok) {
         const serverState = await res.json();
-        trackIndexRef.current = serverState.trackIndex || 0;
-
-        const track = tracks[trackIndexRef.current];
-        if (track) {
+        
+        // If server has no state (first player), initialize it
+        if (!serverState.startedAt) {
+          trackIndexRef.current = 0;
+          const track = tracks[0];
           music.src = track.src;
-          music.currentTime = serverState.position || 0;
+          music.currentTime = 0;
           setCurrentTrackTitle(track.title);
-        }
 
-        await fetch("/api/radio/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ isPlaying: true }),
-        });
+          // Initialize server state with current time
+          await fetch("/api/radio/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              trackIndex: 0,
+              position: 0,
+              isPlaying: true,
+              startedAt: Date.now(),
+            }),
+          });
+        } else {
+          // Sync to server state (follow the first player)
+          trackIndexRef.current = serverState.trackIndex || 0;
+          const track = tracks[trackIndexRef.current];
+          
+          if (track) {
+            music.src = track.src;
+            // Calculate position based on when first player started
+            const elapsed = (Date.now() - serverState.startedAt) / 1000;
+            
+            // Wait for track to load to get duration
+            music.addEventListener('loadedmetadata', () => {
+              const trackDuration = music.duration || 0;
+              music.currentTime = elapsed % trackDuration;
+            }, { once: true });
+            
+            setCurrentTrackTitle(track.title);
+          }
+        }
       } else {
         const track = tracks[0];
         music.src = track.src;
