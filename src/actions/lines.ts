@@ -101,7 +101,7 @@ export async function getActiveLineWithTracking(lineNumber: number) {
   }
 }
 
-export async function updateDriverPosition(shiftId: string, stopId: string) {
+export async function updateDriverPosition(shiftId: string, _stopId: string) {
   try {
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Non authentifié" };
@@ -122,7 +122,7 @@ export async function updateDriverPosition(shiftId: string, stopId: string) {
     // Ici on pourrait stocker la position dans une table séparée
     // Pour l'instant, on retourne juste un succès
     return { success: true };
-  } catch (error) {
+  } catch (_error) {
     return { success: false, error: "Erreur serveur" };
   }
 }

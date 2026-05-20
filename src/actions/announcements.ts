@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 
-export async function getPendingAnnouncements(lastCheckAt: Date | null) {
+export async function getPendingAnnouncements(_lastCheckAt: Date | null) {
   try {
     const announcements = await prisma.liveAnnouncement.findMany({
       where: {

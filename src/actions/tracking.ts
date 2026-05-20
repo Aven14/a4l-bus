@@ -36,7 +36,7 @@ export async function updateTrackingPosition(shiftId: string, stopId: string) {
     revalidatePath("/lignes");
     
     return { success: true };
-  } catch (error) {
+  } catch (_error) {
     return { success: false, error: "Erreur serveur" };
   }
 }

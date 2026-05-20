@@ -22,17 +22,15 @@ export function RadioPlayer() {
     }
   };
 
-  // Set global volume on all audio elements
+  // Apply volume to all audio elements when it changes
   useState(() => {
     if (typeof window !== "undefined") {
-      // Override HTMLAudioElement to set default volume
-      const originalAudio = window.Audio;
-      window.Audio = class extends originalAudio {
-        constructor(...args: any[]) {
-          super(...args);
-          this.volume = volume;
-        }
-      } as any;
+      const interval = setInterval(() => {
+        document.querySelectorAll("audio").forEach((audio) => {
+          audio.volume = volume;
+        });
+      }, 500);
+      return () => clearInterval(interval);
     }
   });
 

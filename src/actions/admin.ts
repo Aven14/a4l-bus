@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { ADMIN_COOKIE, hashToken, isAdminAuthenticated } from "@/lib/auth";
+import { ADMIN_COOKIE, hashToken } from "@/lib/auth";
 import { hasAdminAccess } from "@/lib/session";
 
 async function adminGuard() {
