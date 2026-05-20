@@ -1,443 +1,340 @@
 "use client";
 
-import {
+import React, {
   createContext,
-  useCallback,
   useContext,
+  useCallback,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
-import { CHIME_PATH } from "@/lib/transport-data";
-import { playAudioFile } from "@/lib/play-audio";
 import { fetchRadioTracks } from "@/lib/radio-tracks";
-import {
-  getSyncedPosition,
-  loadTracksWithDurations,
-  type RadioTrackWithDuration,
-} from "@/lib/radio-sync";
+import type { RadioTrackConfig } from "@/lib/radio-sync";
 
-type AnnouncementItem = {
-  audioPath: string;
-  label: string;
-};
-
-type AudioContextValue = {
+interface AudioContextType {
   isPlaying: boolean;
-  volume: number;
-  currentTrackTitle: string;
+  currentTrackTitle: string | null;
   isAnnouncing: boolean;
-  announcementLabel: string | null;
-  announcementError: string | null;
-  radioReady: boolean;
-  togglePlay: () => void;
-  setVolume: (v: number) => void;
-  queueAnnouncement: (audioPath: string, label: string) => void;
-};
-
-const AudioContext = createContext<AudioContextValue | null>(null);
-
-const MUSIC_FADE_MS = 500;
-const CHIME_GAP_MS = 200;
-const SYNC_INTERVAL_MS = 8000;
-const PLAYLIST_REFRESH_MS = 60_000;
-
-function fadeVolume(
-  audio: HTMLAudioElement,
-  from: number,
-  to: number,
-  durationMs: number
-): Promise<void> {
-  return new Promise((resolve) => {
-    const steps = 20;
-    const stepTime = durationMs / steps;
-    let step = 0;
-    const interval = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      audio.volume = from + (to - from) * progress;
-      if (step >= steps) {
-        clearInterval(interval);
-        audio.volume = to;
-        resolve();
-      }
-    }, stepTime);
-  });
+  playRadio: () => void;
+  pauseRadio: () => void;
+  playAnnouncement: (
+    audioUrl: string,
+    label: string,
+    callback?: () => void
+  ) => void;
 }
 
-export function AudioProvider({ children }: { children: ReactNode }) {
-  const musicRef = useRef<HTMLAudioElement | null>(null);
-  const chimeRef = useRef<HTMLAudioElement | null>(null);
-  const announceRef = useRef<HTMLAudioElement | null>(null);
-  const tracksRef = useRef<RadioTrackWithDuration[]>([]);
+const AudioContext = createContext<AudioContextType | null>(null);
 
+let globalMusic: HTMLAudioElement | null = null;
+let globalTracks: RadioTrackConfig[] = [];
+let globalIsPlaying = false;
+let globalIsAnnouncing = false;
+
+export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolumeState] = useState(0.6);
-  const [, setTrackIndex] = useState(0);
-  const [currentTrackTitle, setCurrentTrackTitle] = useState("Cross Track Bus Radio");
+  const [currentTrackTitle, setCurrentTrackTitle] = useState<string | null>(
+    null
+  );
   const [isAnnouncing, setIsAnnouncing] = useState(false);
-  const [announcementLabel, setAnnouncementLabel] = useState<string | null>(null);
-  const [announcementError, setAnnouncementError] = useState<string | null>(null);
-  const [radioReady, setRadioReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">(
+    "idle"
+  );
 
-  const queueRef = useRef<AnnouncementItem[]>([]);
-  const processingRef = useRef(false);
-  const volumeRef = useRef(0.6);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+  const tracksRef = useRef<RadioTrackConfig[]>([]);
+  const trackIndexRef = useRef(0);
   const isPlayingRef = useRef(false);
-  const audioUnlockedRef = useRef(false);
-  const isAnnouncingRef = useRef(false);
-  const lastAnnouncementEndRef = useRef(0);
+  const processingRef = useRef(false);
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  /** Débloque la lecture audio (politique navigateur — doit être appelé au clic) */
-  const unlockAudio = useCallback(() => {
-    if (audioUnlockedRef.current) return;
-    audioUnlockedRef.current = true;
-    for (const el of [musicRef.current, chimeRef.current, announceRef.current]) {
-      if (!el) continue;
-      const vol = el.volume;
-      el.volume = 0.001;
-      void el
-        .play()
-        .then(() => {
-          el.pause();
-          el.currentTime = 0;
-          el.volume = el === musicRef.current ? volumeRef.current : vol;
-        })
-        .catch(() => {});
-    }
-  }, []);
-
-  const loadPlaylist = useCallback(async () => {
-    try {
-      const config = await fetchRadioTracks();
-      console.log("[Radio] Tracks loaded:", config.length);
-      const loaded = await loadTracksWithDurations(config);
-      console.log("[Radio] Tracks with durations:", loaded.length);
-      tracksRef.current = loaded;
-      setRadioReady(loaded.length > 0);
-      if (loaded.length > 0) {
-        const { trackIndex: idx } = getSyncedPosition(loaded);
-        setCurrentTrackTitle(loaded[idx]?.title ?? loaded[0].title);
-      }
-      return loaded;
-    } catch (err) {
-      console.error("[Radio] Error loading playlist:", err);
-      setRadioReady(false);
-      return [];
-    }
-  }, []);
-
-  const applySyncPosition = useCallback(async (play = false) => {
-    const music = musicRef.current;
-    const tracks = tracksRef.current;
-    if (!music || tracks.length === 0 || processingRef.current) return;
-
-    // Si on vient de reprendre après une annonce (60s), ne pas resynchroniser
-    const timeSinceAnnouncement = Date.now() - lastAnnouncementEndRef.current;
-    if (lastAnnouncementEndRef.current > 0 && timeSinceAnnouncement < 60000) {
-      // Sauf si c'est le premier play (music.paused et music.currentTime === 0)
-      if (!(music.paused && music.currentTime === 0)) {
-        return; // Skip sync - let music play naturally
-      }
-    }
-
-    const { trackIndex: idx, offsetSeconds } = getSyncedPosition(tracks);
-    const track = tracks[idx];
-    if (!track) return;
-
-    // Si la musique n'est pas sur la bonne track, changer
-    if (!music.src.endsWith(track.src)) {
-      music.src = track.src;
-      music.load();
-    }
-
-    const seek = () => {
-      // Ne seek que si c'est la première fois ou si on change de track
-      // Ne pas seek pendant la playback normal après une annonce
-      if (offsetSeconds > 0 && offsetSeconds < track.duration - 1) {
-        const timeDiff = Math.abs(music.currentTime - offsetSeconds);
-        // Ne seek que si la différence est > 5 secondes (évite les petits sauts)
-        if (timeDiff > 5) {
-          music.currentTime = offsetSeconds;
-        }
-      }
-      setTrackIndex(idx);
-      setCurrentTrackTitle(track.title);
-      if (play) {
-        music.volume = volumeRef.current;
-        music.play().catch(() => setIsPlaying(false));
-        setIsPlaying(true);
-        isPlayingRef.current = true;
-      }
-    };
-
-    if (music.readyState >= 1) seek();
-    else music.onloadedmetadata = seek;
-  }, []);
-
+  // Initialize audio element
   useEffect(() => {
-    musicRef.current = new Audio();
-    musicRef.current.loop = false;
-    chimeRef.current = new Audio(CHIME_PATH);
-    chimeRef.current.preload = "auto";
-    announceRef.current = new Audio();
-    announceRef.current.preload = "auto";
-    musicRef.current.volume = volume;
-    volumeRef.current = volume;
+    if (!musicRef.current) {
+      const audio = new Audio();
+      audio.preload = "auto";
+      musicRef.current = audio;
+      globalMusic = audio;
 
-    const onEnded = () => {
-      if (isPlayingRef.current && !processingRef.current) {
-        void applySyncPosition(true);
-      }
-    };
-    musicRef.current.addEventListener("ended", onEnded);
-
-    let syncTimer: ReturnType<typeof setInterval>;
-    let refreshTimer: ReturnType<typeof setInterval>;
-
-    (async () => {
-      const loaded = await loadPlaylist();
-      if (loaded.length > 0) {
-        await applySyncPosition(false);
-        syncTimer = setInterval(() => {
-          // Ne pas synchroniser si une annonce est en cours ou vient de finir (15s)
-          const timeSinceAnnouncement = Date.now() - lastAnnouncementEndRef.current;
-          if (isPlayingRef.current && !processingRef.current && !isAnnouncingRef.current && timeSinceAnnouncement > 15000) {
-            void applySyncPosition(true);
-          }
-        }, SYNC_INTERVAL_MS);
-      }
-
-      refreshTimer = setInterval(() => {
-        void loadPlaylist().then((tracks) => {
-          if (tracks.length > 0 && isPlayingRef.current && !processingRef.current && !isAnnouncingRef.current) {
-            void applySyncPosition(true);
-          }
-        });
-      }, PLAYLIST_REFRESH_MS);
-    })();
-
-    // Écouter les annonces broadcast via BroadcastChannel
-    const channel = new BroadcastChannel("crossbus-announcements");
-    
-    channel.onmessage = (event) => {
-      const { audioPath, label } = event.data;
-      
-      if (!audioUnlockedRef.current) {
-        return;
-      }
-      
-      // Ajouter à la file
-      queueRef.current.push({ audioPath, label });
-      
-      // Traiter la file
-      if (!processingRef.current) {
-        processQueue();
-      }
-    };
-
-    // Écouter les contrôles radio (skip from admin)
-    const controlChannel = new BroadcastChannel("crossbus-radio-control");
-    
-    controlChannel.onmessage = (event) => {
-      const { action, trackIndex } = event.data;
-      
-      if (action === "skip" && trackIndex !== undefined && isPlayingRef.current) {
-        const tracks = tracksRef.current;
-        const music = musicRef.current;
-        
-        if (music && tracks[trackIndex]) {
-          const track = tracks[trackIndex];
-          music.src = track.src;
-          music.currentTime = 0;
-          music.play().catch(() => {});
-          setTrackIndex(trackIndex);
-          setCurrentTrackTitle(track.title);
-        }
-      }
-    };
+      audio.addEventListener("ended", handleTrackEnded);
+    }
 
     return () => {
-      clearInterval(syncTimer);
-      clearInterval(refreshTimer);
-      channel.close();
-      controlChannel.close();
-      musicRef.current?.removeEventListener("ended", onEnded);
-      musicRef.current?.pause();
-      chimeRef.current?.pause();
-      announceRef.current?.pause();
+      if (musicRef.current) {
+        musicRef.current.removeEventListener("ended", handleTrackEnded);
+      }
     };
-  }, [applySyncPosition, loadPlaylist]);
+  }, []);
 
-  const togglePlay = useCallback(() => {
-    unlockAudio();
-    const music = musicRef.current;
-    if (!music || isAnnouncing || tracksRef.current.length === 0) return;
+  // Load tracks
+  useEffect(() => {
+    let mounted = true;
 
-    if (isPlayingRef.current) {
-      music.pause();
-      setIsPlaying(false);
-      isPlayingRef.current = false;
-    } else {
-      void applySyncPosition(true);
-    }
-  }, [isAnnouncing, applySyncPosition, unlockAudio]);
+    const loadTracks = async () => {
+      try {
+        const tracks = await fetchRadioTracks();
+        if (!mounted || tracks.length === 0) return;
 
-  const setVolume = useCallback((v: number) => {
-    const clamped = Math.max(0, Math.min(1, v));
-    volumeRef.current = clamped;
-    setVolumeState(clamped);
-    if (musicRef.current && !isAnnouncing) {
-      musicRef.current.volume = clamped;
-    }
-    if (chimeRef.current) chimeRef.current.volume = clamped;
-    if (announceRef.current) announceRef.current.volume = clamped;
-  }, [isAnnouncing]);
+        tracksRef.current = tracks;
+        globalTracks = tracks;
 
-  const processQueue = useCallback(() => {
-    if (processingRef.current || queueRef.current.length === 0) return;
-    processingRef.current = true;
+        console.log(`[Radio] ${tracks.length} tracks loaded`);
+      } catch (error) {
+        console.error("[Radio] Failed to load tracks:", error);
+      }
+    };
 
-    const item = queueRef.current.shift()!;
-    const music = musicRef.current;
-    const chime = chimeRef.current;
-    const announce = announceRef.current;
+    loadTracks();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-    if (!music || !chime || !announce) {
-      processingRef.current = false;
+  // Server sync - check radio state every 2 seconds
+  useEffect(() => {
+    if (!isPlaying) {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
       return;
     }
 
-    setIsAnnouncing(true);
-    isAnnouncingRef.current = true;
-    setAnnouncementLabel(item.label);
-    setAnnouncementError(null);
+    setSyncStatus("syncing");
 
-    const wasPlaying = isPlayingRef.current;
-    const userVolume = volumeRef.current;
+    syncIntervalRef.current = setInterval(async () => {
+      if (processingRef.current || globalIsAnnouncing) return;
 
-    // Lecture déclenchée sans await avant .play() (sinon le navigateur bloque après le clic)
-    chime.src = CHIME_PATH;
-    chime.currentTime = 0;
-    chime.volume = userVolume;
-    announce.src = item.audioPath;
-    announce.load();
-    announce.volume = userVolume;
+      try {
+        const res = await fetch("/api/radio/sync", { cache: "no-store" });
+        if (!res.ok) return;
 
-    const chimePlay = chime.play();
+        const serverState = await res.json();
+        const music = musicRef.current;
+        const tracks = tracksRef.current;
 
-    void (async () => {
-      if (wasPlaying && !music.paused) {
-        const fromVol = music.volume > 0 ? music.volume : userVolume;
-        await fadeVolume(music, fromVol, 0, MUSIC_FADE_MS);
-        music.pause();
-      } else if (wasPlaying) {
-        music.pause();
+        if (!music || tracks.length === 0) return;
+
+        // If server track is different, switch
+        if (serverState.trackIndex !== trackIndexRef.current) {
+          const newTrack = tracks[serverState.trackIndex];
+          if (newTrack) {
+            trackIndexRef.current = serverState.trackIndex;
+            music.src = newTrack.src;
+            music.currentTime = 0;
+            if (isPlayingRef.current) {
+              music.play().catch(() => {});
+            }
+            setCurrentTrackTitle(newTrack.title);
+          }
+          return;
+        }
+
+        // Sync position if difference > 3 seconds
+        const timeDiff = Math.abs(music.currentTime - serverState.position);
+        if (timeDiff > 3 && serverState.position > 0) {
+          music.currentTime = serverState.position;
+        }
+
+        setSyncStatus("idle");
+      } catch (error) {
+        console.error("[Radio] Sync error:", error);
+        setSyncStatus("error");
       }
+    }, 2000);
 
-      const chimeResult = await chimePlay
-        .then(() => ({ ok: true as const }))
-        .catch((err) => ({
-          ok: false as const,
-          error:
-            err instanceof Error
-              ? err.message
-              : "Lecture du signal refusée — cliquez sur la radio puis réessayez",
-        }));
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+    };
+  }, [isPlaying]);
 
-      if (!chimeResult.ok) {
-        // Signal optionnel : on continue quand même vers la voix
-        console.warn("Chime:", chimeResult.error);
-      } else {
-        await new Promise<void>((resolve) => {
-          const timer = setTimeout(resolve, 3000);
-          chime.onended = () => {
-            clearTimeout(timer);
-            resolve();
-          };
-          chime.onerror = () => {
-            clearTimeout(timer);
-            resolve();
-          };
+  const handleTrackEnded = useCallback(() => {
+    if (processingRef.current || globalIsAnnouncing) return;
+
+    const tracks = tracksRef.current;
+    const music = musicRef.current;
+    if (!music || tracks.length === 0) return;
+
+    const nextIndex = (trackIndexRef.current + 1) % tracks.length;
+    trackIndexRef.current = nextIndex;
+
+    const nextTrack = tracks[nextIndex];
+    music.src = nextTrack.src;
+
+    // Update server state
+    fetch("/api/radio/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trackIndex: nextIndex,
+        position: 0,
+        isPlaying: true,
+      }),
+    }).catch(() => {});
+
+    music
+      .play()
+      .then(() => {
+        setCurrentTrackTitle(nextTrack.title);
+      })
+      .catch(() => {});
+  }, []);
+
+  const playRadio = useCallback(async () => {
+    const music = musicRef.current;
+    const tracks = tracksRef.current;
+
+    if (!music || tracks.length === 0) {
+      console.warn("[Radio] No tracks loaded yet");
+      return;
+    }
+
+    processingRef.current = true;
+    isPlayingRef.current = true;
+    globalIsPlaying = true;
+
+    try {
+      // Get current server state
+      const res = await fetch("/api/radio/sync", { cache: "no-store" });
+      if (res.ok) {
+        const serverState = await res.json();
+        trackIndexRef.current = serverState.trackIndex || 0;
+
+        const track = tracks[trackIndexRef.current];
+        if (track) {
+          music.src = track.src;
+          music.currentTime = serverState.position || 0;
+          setCurrentTrackTitle(track.title);
+        }
+
+        // Mark as playing on server
+        await fetch("/api/radio/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isPlaying: true }),
         });
-        await new Promise((r) => setTimeout(r, CHIME_GAP_MS));
+      } else {
+        // Fallback: start from beginning
+        const track = tracks[0];
+        music.src = track.src;
+        music.currentTime = 0;
+        setCurrentTrackTitle(track.title);
       }
 
-      const announceResult = await playAudioFile(
-        announce,
-        item.audioPath,
-        userVolume,
-        60_000
-      );
+      await music.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("[Radio] Failed to play:", error);
+    } finally {
+      processingRef.current = false;
+    }
+  }, []);
 
-      if (!announceResult.ok) {
-        setAnnouncementError(
-          announceResult.error ??
-            `Impossible de lire ${item.audioPath}. Ajoutez le MP3 dans public/audio/.`
+  const pauseRadio = useCallback(async () => {
+    const music = musicRef.current;
+
+    if (!music) return;
+
+    processingRef.current = true;
+    isPlayingRef.current = false;
+    globalIsPlaying = false;
+
+    // Save position to server
+    if (tracksRef.current.length > 0) {
+      fetch("/api/radio/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          position: music.currentTime,
+          isPlaying: false,
+        }),
+      }).catch(() => {});
+    }
+
+    music.pause();
+    setIsPlaying(false);
+    processingRef.current = false;
+  }, []);
+
+  const playAnnouncement = useCallback(
+    async (audioUrl: string, label: string, callback?: () => void) => {
+      const music = musicRef.current;
+      if (!music) return;
+
+      globalIsAnnouncing = true;
+      setIsAnnouncing(true);
+
+      // Save current position
+      const currentPosition = music.currentTime;
+      const wasPlaying = !music.paused;
+
+      try {
+        music.pause();
+
+        // Pause on server
+        await fetch("/api/radio/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            position: currentPosition,
+            isPlaying: false,
+          }),
+        }).catch(() => {});
+
+        const tempAudio = new Audio(audioUrl);
+        tempAudio.preload = "auto";
+
+        tempAudio.addEventListener("canplaythrough", async () => {
+          try {
+            await tempAudio.play();
+          } catch (err) {
+            console.error("[Announcement] Failed to play:", err);
+            globalIsAnnouncing = false;
+            setIsAnnouncing(false);
+            if (wasPlaying && globalIsPlaying) {
+              playRadio();
+            }
+          }
+        }, { once: true });
+
+        tempAudio.addEventListener(
+          "ended",
+          async () => {
+            globalIsAnnouncing = false;
+            setIsAnnouncing(false);
+            callback?.();
+
+            // Resume music if it was playing
+            if (wasPlaying && globalIsPlaying) {
+              await playRadio();
+            }
+          },
+          { once: true }
         );
-      }
-
-      if (wasPlaying) {
-        // Reprendre la musique là où elle s'était arrêtée
-        const restored = musicRef.current;
-        if (restored) {
-          // Sauvegarder le temps de reprise pour bloquer la synchro
-          lastAnnouncementEndRef.current = Date.now();
-          
-          // Petit délai pour éviter la coupure
-          await new Promise((r) => setTimeout(r, 100));
-          restored.volume = 0;
-          // Reprendre la lecture
-          await restored.play().catch(() => {});
-          // Fondu de retour
-          await fadeVolume(restored, 0, userVolume, MUSIC_FADE_MS);
+      } catch (error) {
+        console.error("[Announcement] Error:", error);
+        globalIsAnnouncing = false;
+        setIsAnnouncing(false);
+        if (wasPlaying && globalIsPlaying) {
+          playRadio();
         }
       }
-
-      setIsAnnouncing(false);
-      isAnnouncingRef.current = false;
-      setAnnouncementLabel(null);
-      processingRef.current = false;
-
-      if (queueRef.current.length > 0) processQueue();
-    })();
-  }, [applySyncPosition]);
-
-  const queueAnnouncement = useCallback(
-    (audioPath: string, label: string) => {
-      unlockAudio();
-
-      const announce = announceRef.current;
-      const chime = chimeRef.current;
-      if (announce) {
-        announce.src = audioPath;
-        announce.load();
-      }
-      if (chime) {
-        chime.src = CHIME_PATH;
-        chime.load();
-      }
-
-      queueRef.current.push({ audioPath, label });
-      processQueue();
     },
-    [processQueue, unlockAudio]
+    [playRadio]
   );
 
   return (
     <AudioContext.Provider
       value={{
         isPlaying,
-        volume,
         currentTrackTitle,
         isAnnouncing,
-        announcementLabel,
-        announcementError,
-        radioReady,
-        togglePlay,
-        setVolume,
-        queueAnnouncement,
+        playRadio,
+        pauseRadio,
+        playAnnouncement,
       }}
     >
       {children}
@@ -446,7 +343,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAudio() {
-  const ctx = useContext(AudioContext);
-  if (!ctx) throw new Error("useAudio must be used within AudioProvider");
-  return ctx;
+  const context = useContext(AudioContext);
+  if (!context) {
+    throw new Error("useAudio must be used within AudioProvider");
+  }
+  return context;
 }

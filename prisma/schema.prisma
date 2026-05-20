@@ -125,3 +125,13 @@ model ActivityLog {
   @@index([createdAt])
   @@index([entity])
 }
+
+model RadioState {
+  id         String   @id @default(cuid())
+  trackIndex Int      @default(0)
+  position   Float    @default(0)
+  isPlaying  Boolean  @default(false)
+  lastSync   DateTime @default(now())
+
+  @@index([lastSync])
+}
