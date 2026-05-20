@@ -107,61 +107,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Server sync - check radio state every 2 seconds
-  useEffect(() => {
-    if (!isPlaying) {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-      return;
-    }
-
-    syncIntervalRef.current = setInterval(async () => {
-      if (processingRef.current || isAnnouncingRef.current) return;
-
-      try {
-        const res = await fetch("/api/radio/sync", { cache: "no-store" });
-        if (!res.ok) return;
-
-        const serverState = await res.json();
-        const music = musicRef.current;
-        const tracks = tracksRef.current;
-
-        if (!music || tracks.length === 0) return;
-
-        // If server track is different, switch
-        if (serverState.trackIndex !== trackIndexRef.current) {
-          const newTrack = tracks[serverState.trackIndex];
-          if (newTrack) {
-            trackIndexRef.current = serverState.trackIndex;
-            music.src = newTrack.src;
-            music.currentTime = 0;
-            if (isPlayingRef.current) {
-              music.play().catch(() => {});
-            }
-            setCurrentTrackTitle(newTrack.title);
-          }
-          return;
-        }
-
-        // Sync position if difference > 3 seconds
-        const timeDiff = Math.abs(music.currentTime - serverState.position);
-        if (timeDiff > 3 && serverState.position > 0) {
-          music.currentTime = serverState.position;
-        }
-      } catch (error) {
-        console.error("[Radio] Sync error:", error);
-      }
-    }, 2000);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-    };
-  }, [isPlaying]);
+  // NO polling - sync only on initial play
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
