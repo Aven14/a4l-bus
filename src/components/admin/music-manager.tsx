@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTransition } from "react";
 
 type MusicTrack = {
@@ -15,12 +15,25 @@ export function MusicManager() {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, startTransition] = useTransition();
-  const [currentTrack, setCurrentTrack] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioError, setAudioError] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const broadcastRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
     fetchTracks();
+
+    // Écouter les contrôles radio broadcast
+    broadcastRef.current = new BroadcastChannel("crossbus-radio-control");
+    broadcastRef.current.onmessage = (event) => {
+      const { action, trackIndex } = event.data;
+      
+      if (action === "skip" && trackIndex !== undefined) {
+        setCurrentIndex(trackIndex);
+      }
+    };
+
+    return () => {
+      broadcastRef.current?.close();
+    };
   }, []);
 
   const fetchTracks = async () => {
@@ -35,40 +48,16 @@ export function MusicManager() {
     }
   };
 
-  const handleSkip = (track: MusicTrack) => {
-    const audio = new Audio(track.path);
-    
-    if (currentTrack === track.path && isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      setCurrentTrack(null);
-    } else {
-      if (currentTrack) {
-        // Stop current track
-        const prevAudio = document.querySelector('audio[data-music-player]') as HTMLAudioElement;
-        if (prevAudio) {
-          prevAudio.pause();
-        }
-      }
+  const handleSkip = (trackIndex: number) => {
+    startTransition(() => {
+      // Diffuser le skip à tous les clients
+      broadcastRef.current?.postMessage({
+        action: "skip",
+        trackIndex,
+      });
       
-      audio.setAttribute("data-music-player", "true");
-      audio.play()
-        .then(() => {
-          setCurrentTrack(track.path);
-          setIsPlaying(true);
-          setAudioError(null);
-        })
-        .catch((err) => {
-          setAudioError(`Impossible de jouer: ${track.name}`);
-          setIsPlaying(false);
-          setCurrentTrack(null);
-        });
-
-      audio.onended = () => {
-        setIsPlaying(false);
-        setCurrentTrack(null);
-      };
-    }
+      setCurrentIndex(trackIndex);
+    });
   };
 
   const handleDownload = (track: MusicTrack) => {
@@ -93,15 +82,11 @@ export function MusicManager() {
   return (
     <div className="space-y-4">
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-primary">Musiques de la radio</h3>
+        <h3 className="text-lg font-bold text-primary">Contrôle de la radio</h3>
         <p className="text-sm text-muted">
-          {tracks.length} musique{tracks.length !== 1 ? "s" : ""} disponible{tracks.length !== 1 ? "s" : ""}
+          {tracks.length} musique{tracks.length !== 1 ? "s" : ""} • Skip synchronisé pour tous les utilisateurs
         </p>
       </div>
-
-      {audioError && (
-        <p className="rounded-md bg-accent-light p-3 text-sm text-accent">{audioError}</p>
-      )}
 
       {tracks.length === 0 ? (
         <div className="panel-soft p-10 text-center text-muted">
@@ -109,8 +94,8 @@ export function MusicManager() {
         </div>
       ) : (
         <div className="space-y-2">
-          {tracks.map((track) => {
-            const isCurrentTrack = currentTrack === track.path;
+          {tracks.map((track, index) => {
+            const isCurrentTrack = index === currentIndex;
             
             return (
               <div
@@ -121,26 +106,37 @@ export function MusicManager() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink truncate">{track.name}</p>
+                    <div className="flex items-center gap-2">
+                      {isCurrentTrack && (
+                        <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      )}
+                      <p className="font-medium text-ink truncate">{track.name}</p>
+                    </div>
                     <div className="mt-1 flex gap-3 text-xs text-muted">
                       <span>{formatFileSize(track.size)}</span>
                       <span>•</span>
                       <span>{track.filename}</span>
+                      {isCurrentTrack && (
+                        <>
+                          <span>•</span>
+                          <span className="text-primary font-semibold">♫ En cours</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleSkip(track)}
-                      disabled={pending}
+                      onClick={() => handleSkip(index)}
+                      disabled={pending || isCurrentTrack}
                       className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
-                        isCurrentTrack && isPlaying
-                          ? "bg-accent text-white hover:bg-accent/90"
+                        isCurrentTrack
+                          ? "bg-muted text-white cursor-not-allowed opacity-50"
                           : "bg-primary text-white hover:bg-primary-dark"
                       }`}
                     >
-                      {isCurrentTrack && isPlaying ? "⏹ Stop" : "▶ Skip/Play"}
+                      {isCurrentTrack ? "♫ En cours" : "⏭ Passer à celle-ci"}
                     </button>
                     <button
                       type="button"

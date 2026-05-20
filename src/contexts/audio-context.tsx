@@ -237,10 +237,32 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Écouter les contrôles radio (skip from admin)
+    const controlChannel = new BroadcastChannel("crossbus-radio-control");
+    
+    controlChannel.onmessage = (event) => {
+      const { action, trackIndex } = event.data;
+      
+      if (action === "skip" && trackIndex !== undefined && isPlayingRef.current) {
+        const tracks = tracksRef.current;
+        const music = musicRef.current;
+        
+        if (music && tracks[trackIndex]) {
+          const track = tracks[trackIndex];
+          music.src = track.src;
+          music.currentTime = 0;
+          music.play().catch(() => {});
+          setTrackIndex(trackIndex);
+          setCurrentTrackTitle(track.title);
+        }
+      }
+    };
+
     return () => {
       clearInterval(syncTimer);
       clearInterval(refreshTimer);
       channel.close();
+      controlChannel.close();
       musicRef.current?.removeEventListener("ended", onEnded);
       musicRef.current?.pause();
       chimeRef.current?.pause();
