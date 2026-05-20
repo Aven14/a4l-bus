@@ -1,12 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-
+// Le heartbeat n'est plus nécessaire - le polling est géré par le contexte audio
 export function RadioHeartbeat() {
-  useEffect(() => {
-    // Just check if radio is running, don't initialize it
-    fetch("/api/radio/heartbeat").catch(() => {});
-  }, []);
-
   return null;
 }
