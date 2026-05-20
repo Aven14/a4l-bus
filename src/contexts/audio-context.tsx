@@ -86,6 +86,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const volumeRef = useRef(0.6);
   const isPlayingRef = useRef(false);
   const audioUnlockedRef = useRef(false);
+  const isAnnouncingRef = useRef(false);
 
   /** Débloque la lecture audio (politique navigateur — doit être appelé au clic) */
   const unlockAudio = useCallback(() => {
@@ -175,7 +176,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (loaded.length > 0) {
         await applySyncPosition(false);
         syncTimer = setInterval(() => {
-          if (isPlayingRef.current && !processingRef.current) {
+          // Ne pas synchroniser si une annonce est en cours
+          if (isPlayingRef.current && !processingRef.current && !isAnnouncingRef.current) {
             void applySyncPosition(true);
           }
         }, SYNC_INTERVAL_MS);
@@ -183,7 +185,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       refreshTimer = setInterval(() => {
         void loadPlaylist().then((tracks) => {
-          if (tracks.length > 0 && isPlayingRef.current && !processingRef.current) {
+          if (tracks.length > 0 && isPlayingRef.current && !processingRef.current && !isAnnouncingRef.current) {
             void applySyncPosition(true);
           }
         });
@@ -260,6 +262,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
 
     setIsAnnouncing(true);
+    isAnnouncingRef.current = true;
     setAnnouncementLabel(item.label);
     setAnnouncementError(null);
 
@@ -331,15 +334,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         // Reprendre la musique là où elle s'était arrêtée
         const restored = musicRef.current;
         if (restored) {
+          // Petit délai pour éviter la coupure
+          await new Promise((r) => setTimeout(r, 100));
           restored.volume = 0;
           // Reprendre la lecture
-          restored.play().catch(() => {});
+          await restored.play().catch(() => {});
           // Fondu de retour
           await fadeVolume(restored, 0, userVolume, MUSIC_FADE_MS);
         }
       }
 
       setIsAnnouncing(false);
+      isAnnouncingRef.current = false;
       setAnnouncementLabel(null);
       processingRef.current = false;
 
