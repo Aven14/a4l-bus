@@ -1,7 +1,7 @@
 "use client";
 
 import { useAudio } from "@/contexts/audio-context";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 export function RadioPlayer() {
   const {
@@ -13,14 +13,6 @@ export function RadioPlayer() {
   } = useAudio();
 
   const [volume, setVolume] = useState(0.5);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
-
-  // Set volume on music element
-  useEffect(() => {
-    if (musicRef.current) {
-      musicRef.current.volume = volume;
-    }
-  }, [volume]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -29,6 +21,20 @@ export function RadioPlayer() {
       playRadio();
     }
   };
+
+  // Set global volume on all audio elements
+  useState(() => {
+    if (typeof window !== "undefined") {
+      // Override HTMLAudioElement to set default volume
+      const originalAudio = window.Audio;
+      window.Audio = class extends originalAudio {
+        constructor(...args: any[]) {
+          super(...args);
+          this.volume = volume;
+        }
+      } as any;
+    }
+  });
 
   return (
     <div
@@ -71,7 +77,14 @@ export function RadioPlayer() {
           max={1}
           step={0.01}
           value={volume}
-          onChange={(e) => setVolume(parseFloat(e.target.value))}
+          onChange={(e) => {
+            const vol = parseFloat(e.target.value);
+            setVolume(vol);
+            // Apply to all audio elements on page
+            document.querySelectorAll("audio").forEach((audio) => {
+              audio.volume = vol;
+            });
+          }}
           className="h-1 w-24 cursor-pointer accent-primary md:w-32"
           aria-label="Volume"
         />
