@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { getCurrentUser, ensureBootstrapAdmin } from "@/lib/session";
 import { RadioPlayer } from "@/components/audio/radio-player";
 import { AnnouncementOverlay } from "@/components/audio/announcement-overlay";
+import { RadioHeartbeat } from "@/components/audio/radio-heartbeat";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -34,6 +35,7 @@ export default async function RootLayout({
     <html lang="fr" className={jakarta.variable}>
       <body className="antialiased">
         <AudioProvider>
+          <RadioHeartbeat />
           <TransportBackground />
           <Navbar user={user} />
           <main className="relative z-10 min-h-screen bg-transparent pb-28 pt-16 sm:pt-[4.25rem]">

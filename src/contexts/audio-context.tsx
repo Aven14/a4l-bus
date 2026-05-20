@@ -95,7 +95,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Load tracks
+  // Load tracks and auto-start if radio is already playing
   useEffect(() => {
     let mounted = true;
 
@@ -106,6 +106,37 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         tracksRef.current = tracks;
         console.log(`[Radio] ${tracks.length} tracks loaded`);
+
+        // Check if radio is already playing on server
+        const res = await fetch("/api/radio/heartbeat", { cache: "no-store" });
+        if (res.ok) {
+          const serverState = await res.json();
+          
+          // If radio is playing, auto-start for this client
+          if (serverState.playing) {
+            const music = musicRef.current;
+            if (!music) return;
+
+            trackIndexRef.current = serverState.trackIndex || 0;
+            const track = tracks[trackIndexRef.current];
+            
+            if (track) {
+              music.src = track.src;
+              music.currentTime = serverState.position;
+              setCurrentTrackTitle(track.title);
+              
+              // Auto-play
+              try {
+                await music.play();
+                setIsPlaying(true);
+                isPlayingRef.current = true;
+                console.log("[Radio] Auto-started, synced to server");
+              } catch (error) {
+                console.log("[Radio] Auto-play blocked by browser, waiting for user interaction");
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error("[Radio] Failed to load tracks:", error);
       }

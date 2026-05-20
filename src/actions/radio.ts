@@ -24,6 +24,7 @@ export async function updateRadioState(data: {
   trackIndex?: number;
   position?: number;
   isPlaying?: boolean;
+  startedAt?: number;
 }) {
   const state = await getRadioState();
   
@@ -33,6 +34,7 @@ export async function updateRadioState(data: {
       ...(data.trackIndex !== undefined && { trackIndex: data.trackIndex }),
       ...(data.position !== undefined && { position: data.position }),
       ...(data.isPlaying !== undefined && { isPlaying: data.isPlaying }),
+      ...(data.startedAt !== undefined && { startedAt: data.startedAt }),
       lastSync: new Date(),
     },
   });
