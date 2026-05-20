@@ -94,7 +94,7 @@ export function Navbar({ user }: { user: NavUser | null }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full max-w-[100vw] overflow-x-hidden border-b border-line/70 bg-surface/95 shadow-elevated backdrop-blur-md">
       <div className="mx-auto grid h-14 w-full max-w-[100vw] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 sm:h-[3.75rem] sm:gap-3 sm:px-5 lg:px-8">
-        <nav className="flex min-w-0 items-center gap-0.5 justify-self-start overflow-x-auto overflow-y-hidden py-0.5 sm:gap-1">
+        <nav className="flex min-w-0 items-center gap-0.5 justify-self-start overflow-x-auto overflow-y-hidden py-0.5 scrollbar-hide sm:gap-1">
           {leftLinks.map((link) => (
             <NavLink
               key={link.href}
@@ -128,14 +128,16 @@ export function Navbar({ user }: { user: NavUser | null }) {
                 prefetch={true}
                 className="shrink-0 rounded-md px-2 py-2 text-xs font-semibold text-primary hover:bg-primary-light/50 sm:px-3 sm:text-sm"
               >
-                Connexion
+                <span className="hidden sm:inline">Connexion</span>
+                <span className="sm:hidden">🔑</span>
               </Link>
               <Link
                 href="/inscription"
                 prefetch={true}
                 className="btn-primary shrink-0 px-2.5 py-2 text-xs sm:px-4 sm:text-sm"
               >
-                Inscription
+                <span className="hidden sm:inline">Inscription</span>
+                <span className="sm:hidden">✍️</span>
               </Link>
             </>
           ) : (
@@ -148,7 +150,8 @@ export function Navbar({ user }: { user: NavUser | null }) {
                 onClick={handleLogout}
                 className="shrink-0 rounded-md bg-accent-light px-2.5 py-2 text-xs font-semibold text-accent shadow-card transition hover:shadow-card-hover sm:px-4 sm:text-sm"
               >
-                Déconnexion
+                <span className="hidden sm:inline">Déconnexion</span>
+                <span className="sm:hidden">🚪</span>
               </button>
             </>
           )}

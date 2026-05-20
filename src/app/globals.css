@@ -26,13 +26,18 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 .transport-bg {
@@ -217,6 +222,33 @@ body {
   }
 }
 
+/* Mobile responsive utilities */
+@media (max-width: 640px) {
+  .page-enter {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .panel,
+  .panel-soft,
+  .panel-highlight {
+    padding: 0.75rem;
+  }
+  
+  /* Buttons plus grands sur mobile pour le touch */
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  /* Inputs plus grands sur mobile */
+  .input-field {
+    min-height: 44px;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -229,4 +261,13 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
+}
+
+/* Cacher scrollbar sur mobile pour les éléments scrollables */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }

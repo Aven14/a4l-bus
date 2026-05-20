@@ -125,18 +125,32 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const tracks = tracksRef.current;
     if (!music || tracks.length === 0 || processingRef.current) return;
 
+    // Si on vient de reprendre après une annonce, ne JAMAIS resynchroniser
+    // La musique continue normalement depuis là où elle s'est arrêtée
+    const timeSinceAnnouncement = Date.now() - lastAnnouncementEndRef.current;
+    if (timeSinceAnnouncement < 60000 && lastAnnouncementEndRef.current > 0) {
+      return; // Skip sync - let music play naturally
+    }
+
     const { trackIndex: idx, offsetSeconds } = getSyncedPosition(tracks);
     const track = tracks[idx];
     if (!track) return;
 
+    // Si la musique n'est pas sur la bonne track, changer
     if (!music.src.endsWith(track.src)) {
       music.src = track.src;
       music.load();
     }
 
     const seek = () => {
+      // Ne seek que si c'est la première fois ou si on change de track
+      // Ne pas seek pendant la playback normal après une annonce
       if (offsetSeconds > 0 && offsetSeconds < track.duration - 1) {
-        music.currentTime = offsetSeconds;
+        const timeDiff = Math.abs(music.currentTime - offsetSeconds);
+        // Ne seek que si la différence est > 5 secondes (évite les petits sauts)
+        if (timeDiff > 5) {
+          music.currentTime = offsetSeconds;
+        }
       }
       setTrackIndex(idx);
       setCurrentTrackTitle(track.title);

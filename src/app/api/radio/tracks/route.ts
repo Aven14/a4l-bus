@@ -1,33 +1,35 @@
-import { readdir } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
-
-export const dynamic = "force-dynamic";
-
-function titleFromFilename(filename: string): string {
-  return filename
-    .replace(/\.mp3$/i, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+import fs from "fs";
+import path from "path";
 
 export async function GET() {
   try {
     const musicDir = path.join(process.cwd(), "public", "audio", "music");
-    const entries = await readdir(musicDir, { withFileTypes: true });
+    
+    if (!fs.existsSync(musicDir)) {
+      return NextResponse.json({ tracks: [] });
+    }
 
-    const tracks = entries
-      .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".mp3"))
-      .map((e) => ({
-        title: titleFromFilename(e.name) || "Cross Track Bus Radio",
-        src: `/audio/music/${encodeURIComponent(e.name)}`,
-        filename: e.name,
-      }))
-      .sort((a, b) => a.filename.localeCompare(b.filename));
+    const files = fs.readdirSync(musicDir);
+    const tracks = files
+      .filter((file) => file.endsWith(".mp3"))
+      .map((file) => {
+        const filePath = path.join(musicDir, file);
+        const stats = fs.statSync(filePath);
+        const name = file.replace(".mp3", "").replace(/_/g, " ").replace(/-/g, " ");
+        
+        return {
+          filename: file,
+          name: name,
+          path: `/audio/music/${file}`,
+          size: stats.size,
+          lastModified: stats.mtime,
+        };
+      });
 
-    return NextResponse.json(tracks);
-  } catch {
-    return NextResponse.json([]);
+    return NextResponse.json({ tracks });
+  } catch (error) {
+    console.error("Error reading music directory:", error);
+    return NextResponse.json({ error: "Failed to read music files" }, { status: 500 });
   }
 }
