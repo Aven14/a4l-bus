@@ -123,6 +123,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Load tracks with durations
   useEffect(() => {
+    // Ne charger que côté client
+    if (typeof window === 'undefined') return;
+
     let mounted = true;
 
     const loadTracks = async () => {

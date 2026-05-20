@@ -34,6 +34,11 @@ export function shuffleWithSeed<T>(items: T[], seed: number): T[] {
 }
 
 export function getAudioDuration(src: string): Promise<number> {
+  // Vérifier si on est côté client (Audio n'existe pas côté serveur)
+  if (typeof window === 'undefined' || typeof Audio === 'undefined') {
+    return Promise.resolve(0);
+  }
+
   return new Promise((resolve) => {
     const audio = new Audio();
     audio.preload = "metadata";

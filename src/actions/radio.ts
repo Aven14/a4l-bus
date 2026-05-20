@@ -41,7 +41,7 @@ export async function updateRadioState(data: {
 }
 
 // Calculer la position actuelle basée sur le startedAt et les durées des pistes
-export function calculateServerState(state: { isPlaying: boolean; startedAt: number | null; trackIndex: number; position: number }, trackDurations: number[]) {
+export function calculateServerState(state: { isPlaying: boolean; startedAt: number | null; trackIndex: number; position: number }, trackDurations: number[], now: number = Date.now()) {
   if (!state.isPlaying || state.startedAt === null) {
     return {
       trackIndex: state.trackIndex,
@@ -50,7 +50,7 @@ export function calculateServerState(state: { isPlaying: boolean; startedAt: num
     };
   }
   
-  const elapsedSeconds = (Date.now() - state.startedAt) / 1000;
+  const elapsedSeconds = (now - state.startedAt) / 1000;
   
   // Calculer la position actuelle dans la playlist
   let remaining = elapsedSeconds;
