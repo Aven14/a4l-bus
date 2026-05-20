@@ -125,11 +125,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const tracks = tracksRef.current;
     if (!music || tracks.length === 0 || processingRef.current) return;
 
-    // Si on vient de reprendre après une annonce, ne JAMAIS resynchroniser
-    // La musique continue normalement depuis là où elle s'est arrêtée
+    // Si on vient de reprendre après une annonce (60s), ne pas resynchroniser
     const timeSinceAnnouncement = Date.now() - lastAnnouncementEndRef.current;
-    if (timeSinceAnnouncement < 60000 && lastAnnouncementEndRef.current > 0) {
-      return; // Skip sync - let music play naturally
+    if (lastAnnouncementEndRef.current > 0 && timeSinceAnnouncement < 60000) {
+      // Sauf si c'est le premier play (music.paused et music.currentTime === 0)
+      if (!(music.paused && music.currentTime === 0)) {
+        return; // Skip sync - let music play naturally
+      }
     }
 
     const { trackIndex: idx, offsetSeconds } = getSyncedPosition(tracks);
