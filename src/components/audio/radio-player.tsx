@@ -1,16 +1,34 @@
 "use client";
 
 import { useAudio } from "@/contexts/audio-context";
+import { useState, useEffect, useRef } from "react";
 
 export function RadioPlayer() {
   const {
     isPlaying,
-    volume,
     isAnnouncing,
-    radioReady,
-    togglePlay,
-    setVolume,
+    currentTrackTitle,
+    playRadio,
+    pauseRadio,
   } = useAudio();
+
+  const [volume, setVolume] = useState(0.5);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+
+  // Set volume on music element
+  useEffect(() => {
+    if (musicRef.current) {
+      musicRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      pauseRadio();
+    } else {
+      playRadio();
+    }
+  };
 
   return (
     <div
@@ -40,10 +58,10 @@ export function RadioPlayer() {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-ink">
-            Radio/Annonce Cross Track Bus
+            {currentTrackTitle || "Radio Cross Track Bus"}
           </p>
           <p className="text-xs text-muted">
-            {!radioReady ? "Aucune musique disponible" : "Radio en direct disponible 24h/24"}
+            {isAnnouncing ? "📢 Annonce en cours..." : "Radio en direct disponible 24h/24"}
           </p>
         </div>
 
