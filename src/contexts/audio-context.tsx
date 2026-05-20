@@ -52,6 +52,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const isAnnouncingRef = useRef(false);
   const processingRef = useRef(false);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const broadcastRef = useRef<BroadcastChannel | null>(null);
 
   // Initialize audio element
   useEffect(() => {
@@ -95,6 +96,36 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Listen for master commands
+  useEffect(() => {
+    broadcastRef.current = new BroadcastChannel("crossbus-radio-master");
+    
+    broadcastRef.current.onmessage = (event) => {
+      const { action, trackIndex, position, timestamp } = event.data;
+      
+      if (action === "master-started" && !isPlayingRef.current) {
+        // Another tab is master, sync to it
+        const music = musicRef.current;
+        const tracks = tracksRef.current;
+        
+        if (music && tracks[trackIndex]) {
+          const elapsed = (Date.now() - timestamp) / 1000;
+          music.src = tracks[trackIndex].src;
+          music.currentTime = elapsed;
+          music.play().catch(() => {});
+          setIsPlaying(true);
+          isPlayingRef.current = true;
+          setCurrentTrackTitle(tracks[trackIndex].title);
+          trackIndexRef.current = trackIndex;
+        }
+      }
+    };
+
+    return () => {
+      broadcastRef.current?.close();
+    };
+  }, []);
+
   // Load tracks and auto-start if radio is already playing
   useEffect(() => {
     let mounted = true;
@@ -106,37 +137,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         tracksRef.current = tracks;
         console.log(`[Radio] ${tracks.length} tracks loaded`);
-
-        // Check if radio is already playing on server
-        const res = await fetch("/api/radio/heartbeat", { cache: "no-store" });
-        if (res.ok) {
-          const serverState = await res.json();
-          
-          // If radio is playing, auto-start for this client
-          if (serverState.playing) {
-            const music = musicRef.current;
-            if (!music) return;
-
-            trackIndexRef.current = serverState.trackIndex || 0;
-            const track = tracks[trackIndexRef.current];
-            
-            if (track) {
-              music.src = track.src;
-              music.currentTime = serverState.position;
-              setCurrentTrackTitle(track.title);
-              
-              // Auto-play
-              try {
-                await music.play();
-                setIsPlaying(true);
-                isPlayingRef.current = true;
-                console.log("[Radio] Auto-started, synced to server");
-              } catch (error) {
-                console.log("[Radio] Auto-play blocked by browser, waiting for user interaction");
-              }
-            }
-          }
-        }
       } catch (error) {
         console.error("[Radio] Failed to load tracks:", error);
       }
@@ -148,7 +148,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // NO polling - heartbeat handles sync
+  // NO polling - use BroadcastChannel for sync
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
@@ -163,45 +163,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isPlayingRef.current = true;
 
     try {
-      // Check if radio is already running
-      const res = await fetch("/api/radio/heartbeat", { cache: "no-store" });
-      
-      if (res.ok) {
-        const serverState = await res.json();
-        
-        if (serverState.playing) {
-          // Radio already running - sync to it
-          trackIndexRef.current = serverState.trackIndex || 0;
-          const track = tracks[trackIndexRef.current];
-          
-          if (track) {
-            music.src = track.src;
-            music.currentTime = serverState.position;
-            setCurrentTrackTitle(track.title);
-          }
-        } else {
-          // First time - initialize radio
-          await fetch("/api/radio/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              trackIndex: 0,
-              position: 0,
-              isPlaying: true,
-              startedAt: Date.now(),
-            }),
-          });
-          
-          trackIndexRef.current = 0;
-          const track = tracks[0];
-          music.src = track.src;
-          music.currentTime = 0;
-          setCurrentTrackTitle(track.title);
-        }
-      }
+      const track = tracks[0];
+      music.src = track.src;
+      music.currentTime = 0;
+      setCurrentTrackTitle(track.title);
 
       await music.play();
       setIsPlaying(true);
+      isPlayingRef.current = true;
+
+      // Announce to other tabs that we're the master
+      broadcastRef.current?.postMessage({
+        action: "master-started",
+        trackIndex: 0,
+        position: 0,
+        timestamp: Date.now(),
+      });
     } catch (error) {
       console.error("[Radio] Failed to play:", error);
     } finally {
