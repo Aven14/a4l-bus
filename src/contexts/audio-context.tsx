@@ -148,45 +148,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Sync position every 5 seconds to server
-  useEffect(() => {
-    if (!isPlaying) {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-      return;
-    }
-
-    // Save position to server every 5 seconds
-    syncIntervalRef.current = setInterval(async () => {
-      if (processingRef.current || isAnnouncingRef.current) return;
-
-      const music = musicRef.current;
-      if (!music || music.paused) return;
-
-      try {
-        await fetch("/api/radio/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            trackIndex: trackIndexRef.current,
-            position: music.currentTime,
-            isPlaying: true,
-          }),
-        });
-      } catch (error) {
-        console.error("[Radio] Sync error:", error);
-      }
-    }, 5000);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
-    };
-  }, [isPlaying]);
+  // NO polling - heartbeat handles sync
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
@@ -201,13 +163,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isPlayingRef.current = true;
 
     try {
-      const res = await fetch("/api/radio/sync", { cache: "no-store" });
+      // Just start playing - heartbeat already initialized the radio
+      const res = await fetch("/api/radio/heartbeat", { cache: "no-store" });
       
       if (res.ok) {
         const serverState = await res.json();
         
-        // If server has a position, sync to it (follow master)
-        if (serverState.position > 0 && serverState.isPlaying) {
+        if (serverState.playing) {
           trackIndexRef.current = serverState.trackIndex || 0;
           const track = tracks[trackIndexRef.current];
           
@@ -217,18 +179,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             setCurrentTrackTitle(track.title);
           }
         } else {
-          // First player - start from beginning
+          // Start from beginning
           trackIndexRef.current = 0;
           const track = tracks[0];
           music.src = track.src;
           music.currentTime = 0;
           setCurrentTrackTitle(track.title);
         }
-      } else {
-        const track = tracks[0];
-        music.src = track.src;
-        music.currentTime = 0;
-        setCurrentTrackTitle(track.title);
       }
 
       await music.play();
