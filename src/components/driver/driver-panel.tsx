@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useAudio } from "@/contexts/audio-context";
 import { TRANSPORT_LINES, type LineDef } from "@/lib/transport-data";
 import { cn } from "@/lib/utils";
 
 export function DriverPanel() {
+  const { playAnnouncement } = useAudio();
   const [selectedLine, setSelectedLine] = useState<LineDef | null>(null);
   const [lastTriggered, setLastTriggered] = useState<string | null>(null);
 
-  const handleAnnounce = (label: string) => {
+  const handleAnnounce = (audioPath: string, label: string) => {
+    playAnnouncement(audioPath, label);
     setLastTriggered(label);
   };
 
@@ -62,6 +65,7 @@ export function DriverPanel() {
                   type="button"
                   onClick={() =>
                     handleAnnounce(
+                      stop.audioPath,
                       `Ligne ${selectedLine.number} — ${stop.name}`
                     )
                   }

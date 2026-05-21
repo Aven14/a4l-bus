@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAudio } from "@/contexts/audio-context";
 import { announceStop } from "@/actions/shifts";
 
 type Stop = {
@@ -19,6 +20,7 @@ export function AnnouncementPanel({
   lineName: string;
   stops: Stop[];
 }) {
+  const { playAnnouncement } = useAudio();
   const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -28,13 +30,8 @@ export function AnnouncementPanel({
 
     const label = `Arrêt ${index + 1} — ${stop.name}`;
 
-    // Diffuser l'annonce à tous les onglets via BroadcastChannel
-    const channel = new BroadcastChannel("crossbus-announcements");
-    channel.postMessage({
-      audioPath: stop.audioUrl,
-      label,
-    });
-    channel.close();
+    // Jouer l'annonce
+    playAnnouncement(stop.audioUrl, label);
 
     // Mettre à jour la position du chauffeur
     const result = await announceStop(stop.id);
