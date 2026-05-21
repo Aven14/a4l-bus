@@ -186,14 +186,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     console.log("[Announcement] Starting announcement:", label);
     
+    // Vérifier l'état réel de l'audio
+    const actuallyPlaying = !music.paused && music.src !== "";
+    console.log("[Announcement] Audio state - isPlaying:", isPlaying, "actuallyPlaying:", actuallyPlaying, "paused:", music.paused, "src:", music.src);
+    
     // Sauvegarder l'état de la radio
-    wasPlayingRef.current = isPlaying;
+    wasPlayingRef.current = actuallyPlaying;
     const currentSrc = music.src;
     const currentTime = music.currentTime;
     console.log("[Announcement] Saved state - wasPlaying:", wasPlayingRef.current, "src:", currentSrc, "time:", currentTime);
     
     // Si la radio n'est pas en lecture, juste jouer l'annonce sans fade out
-    if (!isPlaying) {
+    if (!actuallyPlaying) {
       console.log("[Announcement] Radio not playing, playing announcement directly");
       chime.src = "/audio/sfx/chime.mp3";
       chime.volume = volume;
