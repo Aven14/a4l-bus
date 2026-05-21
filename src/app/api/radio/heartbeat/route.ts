@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     
     const state = await syncRadioClient(trackDurations);
     return NextResponse.json(state);
-  } catch (_error) {
+  } catch (error) {
+    console.error("[Radio heartbeat error]:", error);
     return NextResponse.json({ error: "Failed to get radio state" }, { status: 500 });
   }
 }

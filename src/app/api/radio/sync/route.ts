@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
     
     const state = await syncRadioClient(trackDurations);
     return NextResponse.json(state);
-  } catch (_error) {
+  } catch (error) {
+    console.error("[Radio sync GET error]:", error);
     return NextResponse.json({ error: "Failed to get radio state" }, { status: 500 });
   }
 }
@@ -19,7 +20,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const state = await updateRadioState(body);
     return NextResponse.json(state);
-  } catch (_error) {
+  } catch (error) {
+    console.error("[Radio sync POST error]:", error);
     return NextResponse.json({ error: "Failed to update radio state" }, { status: 500 });
   }
 }
