@@ -26,7 +26,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolume] = useState(0.5);
 
   const musicRef = useRef<HTMLAudioElement | null>(null);
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Set volume on music element when it changes
   useEffect(() => {
@@ -79,28 +78,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPlaying]);
 
-  // Start polling for sync
-  useEffect(() => {
-    syncIntervalRef.current = setInterval(() => {
-      syncWithServer();
-    }, 2000);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-      }
-    };
-  }, [syncWithServer]);
-
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
     if (!music) return;
 
+    // Sync une seule fois au démarrage
+    await syncWithServer();
+    
     setIsPlaying(true);
     music.play().catch(() => {});
-    
-    // Sync immédiatement pour se mettre à jour
-    await syncWithServer();
   }, [syncWithServer]);
 
   const pauseRadio = useCallback(async () => {
