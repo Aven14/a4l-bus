@@ -54,7 +54,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       
       // Changer de piste automatiquement à la fin
       audio.addEventListener("ended", () => {
-        playRadio();
+        playNextTrack();
       });
     }
     
@@ -85,6 +85,51 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, []);
+
+  const playNextTrack = useCallback(async () => {
+    const music = musicRef.current;
+    if (!music) return;
+
+    try {
+      // Récupérer la liste des pistes
+      const response = await fetch("/api/radio");
+      if (!response.ok) return;
+
+      const state = await response.json();
+      
+      if (state.tracks && state.tracks.length > 0) {
+        // Trouver l'index actuel et passer au suivant
+        const currentTrack = music.src.split('/').pop();
+        let currentIndex = state.tracks.indexOf(currentTrack || "");
+        if (currentIndex === -1) currentIndex = 0;
+        
+        const nextIndex = (currentIndex + 1) % state.tracks.length;
+        const nextTrack = state.tracks[nextIndex];
+        
+        // Charger la piste suivante au début
+        const audioSrc = `/audio/music/${nextTrack}`;
+        music.src = audioSrc;
+        setCurrentTrackTitle(nextTrack.replace(".mp3", ""));
+        music.currentTime = 0;
+        
+        // Jouer avec fade in
+        music.volume = 0;
+        await music.play();
+        setIsPlaying(true);
+        
+        // Fade in sur 500ms
+        const fadeInInterval = setInterval(() => {
+          if (music.volume < volume) {
+            music.volume = Math.min(music.volume + 0.05, volume);
+          } else {
+            clearInterval(fadeInInterval);
+          }
+        }, 25);
+      }
+    } catch (error) {
+      console.error("[Radio next track error]:", error);
+    }
+  }, [volume]);
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
@@ -141,6 +186,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Sauvegarder l'état de la radio
     wasPlayingRef.current = isPlaying;
+    const currentSrc = music.src;
+    const currentTime = music.currentTime;
     
     // Fade out de la musique sur 500ms
     const fadeOutInterval = setInterval(() => {
@@ -164,13 +211,28 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           // Après l'annonce, reprendre la radio avec fade in
           announcement.onended = () => {
             if (wasPlayingRef.current) {
-              playRadio();
+              // Reprendre exactement où on était
+              music.src = currentSrc;
+              music.currentTime = currentTime;
+              music.volume = 0;
+              music.play().then(() => {
+                setIsPlaying(true);
+                
+                // Fade in sur 500ms
+                const fadeInInterval = setInterval(() => {
+                  if (music.volume < volume) {
+                    music.volume = Math.min(music.volume + 0.05, volume);
+                  } else {
+                    clearInterval(fadeInInterval);
+                  }
+                }, 25);
+              }).catch(() => {});
             }
           };
         };
       }
     }, 25);
-  }, [isPlaying, volume, playRadio]);
+  }, [isPlaying, volume]);
 
   return (
     <AudioContext.Provider
