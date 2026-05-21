@@ -184,10 +184,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const chime = chimeRef.current;
     if (!music || !announcement || !chime) return;
 
+    console.log("[Announcement] Starting announcement:", label);
+    
     // Sauvegarder l'état de la radio
     wasPlayingRef.current = isPlaying;
     const currentSrc = music.src;
     const currentTime = music.currentTime;
+    console.log("[Announcement] Saved state - wasPlaying:", wasPlayingRef.current, "src:", currentSrc, "time:", currentTime);
     
     // Fade out de la musique sur 500ms
     const fadeOutInterval = setInterval(() => {
@@ -196,27 +199,33 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       } else {
         clearInterval(fadeOutInterval);
         music.pause();
+        console.log("[Announcement] Music paused");
         
         // Jouer le chime
         chime.src = "/audio/sfx/chime.mp3";
         chime.volume = volume;
         chime.play().catch(() => {});
+        console.log("[Announcement] Chime playing");
         
         // Après le chime, jouer l'annonce
         chime.onended = () => {
+          console.log("[Announcement] Chime ended, playing announcement");
           announcement.src = audioUrl;
           announcement.volume = volume;
           announcement.play().catch(() => {});
           
           // Après l'annonce, reprendre la radio avec fade in
           announcement.onended = () => {
+            console.log("[Announcement] Announcement ended, wasPlaying:", wasPlayingRef.current);
             if (wasPlayingRef.current) {
+              console.log("[Announcement] Resuming music");
               // Reprendre exactement où on était
               music.src = currentSrc;
               music.currentTime = currentTime;
               music.volume = 0;
               music.play().then(() => {
                 setIsPlaying(true);
+                console.log("[Announcement] Music resumed");
                 
                 // Fade in sur 500ms
                 const fadeInInterval = setInterval(() => {
@@ -224,9 +233,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                     music.volume = Math.min(music.volume + 0.05, volume);
                   } else {
                     clearInterval(fadeInInterval);
+                    console.log("[Announcement] Fade in complete");
                   }
                 }, 25);
-              }).catch(() => {});
+              }).catch((err) => {
+                console.error("[Announcement] Error resuming music:", err);
+              });
+            } else {
+              console.log("[Announcement] Not resuming - wasPlaying was false");
             }
           };
         };
