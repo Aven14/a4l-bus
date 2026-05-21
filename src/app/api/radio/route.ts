@@ -25,7 +25,7 @@ function getTracks() {
   }
 }
 
-// GET - Obtenir l'état actuel de la radio
+// GET - Obtenir l'état actuel de la radio (contenu global)
 export async function GET() {
   try {
     let state = await prisma.radioState.findFirst();
@@ -35,8 +35,20 @@ export async function GET() {
         data: {
           trackIndex: 0,
           position: 0,
-          isPlaying: false,
+          isPlaying: true, // La radio est toujours "en cours" côté serveur
+          startedAt: Date.now(),
           lastSync: new Date(),
+        },
+      });
+    }
+    
+    // Si la radio n'est pas démarrée, la démarrer
+    if (!state.startedAt) {
+      state = await prisma.radioState.update({
+        where: { id: state.id },
+        data: {
+          startedAt: Date.now(),
+          isPlaying: true,
         },
       });
     }
@@ -44,11 +56,11 @@ export async function GET() {
     // Récupérer la liste des pistes directement
     const tracks = getTracks();
     
-    // Calculer la position actuelle si la radio joue
+    // Calculer la position actuelle (la radio continue toujours)
     let calculatedPosition = state.position;
     let calculatedTrackIndex = state.trackIndex;
     
-    if (state.isPlaying && state.startedAt !== null && tracks.length > 0) {
+    if (state.startedAt !== null && tracks.length > 0) {
       const elapsedSeconds = (Date.now() - Number(state.startedAt)) / 1000;
       // Durée moyenne d'une piste = 180 secondes
       const trackDuration = 180;
@@ -64,7 +76,6 @@ export async function GET() {
     return NextResponse.json({
       trackIndex: calculatedTrackIndex,
       position: calculatedPosition,
-      isPlaying: state.isPlaying,
       tracks,
     });
   } catch (error) {
@@ -73,11 +84,11 @@ export async function GET() {
   }
 }
 
-// POST - Mettre à jour l'état de la radio (play/pause)
+// POST - Démarrer/arrêter la radio (action globale, rarement utilisée)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { isPlaying } = body;
+    const { action } = body; // 'start' ou 'stop'
     
     // Récupérer la liste des pistes directement
     const tracks = getTracks();
@@ -89,22 +100,41 @@ export async function POST(request: NextRequest) {
         data: {
           trackIndex: 0,
           position: 0,
-          isPlaying: false,
+          isPlaying: true,
+          startedAt: Date.now(),
           lastSync: new Date(),
         },
       });
     }
     
-    // Choisir une piste au hasard si on démarre
+    if (action === 'stop') {
+      // Arrêter la radio globalement
+      const updatedState = await prisma.radioState.update({
+        where: { id: state.id },
+        data: {
+          isPlaying: false,
+          startedAt: null,
+          lastSync: new Date(),
+        },
+      });
+      
+      return NextResponse.json({
+        trackIndex: updatedState.trackIndex,
+        position: updatedState.position,
+        tracks,
+      });
+    }
+    
+    // Par défaut, démarrer ou redémarrer
     const randomTrackIndex = tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0;
     
     const updatedState = await prisma.radioState.update({
       where: { id: state.id },
       data: {
-        isPlaying: isPlaying ?? state.isPlaying,
-        startedAt: isPlaying ? Date.now() : null,
-        trackIndex: isPlaying ? randomTrackIndex : state.trackIndex,
-        position: isPlaying ? 0 : state.position,
+        isPlaying: true,
+        startedAt: Date.now(),
+        trackIndex: randomTrackIndex,
+        position: 0,
         lastSync: new Date(),
       },
     });
@@ -112,7 +142,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       trackIndex: updatedState.trackIndex,
       position: updatedState.position,
-      isPlaying: updatedState.isPlaying,
       tracks,
     });
   } catch (error) {

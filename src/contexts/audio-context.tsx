@@ -54,7 +54,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const music = musicRef.current;
       if (!music) return;
 
-      if (state.isPlaying && state.tracks && state.tracks.length > 0) {
+      if (state.tracks && state.tracks.length > 0) {
         const track = state.tracks[state.trackIndex % state.tracks.length];
         const audioSrc = track.src;
         
@@ -63,24 +63,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           setCurrentTrackTitle(track.title);
         }
         
-        // Sync position
-        if (Math.abs(music.currentTime - state.position) > 1) {
-          music.currentTime = state.position;
+        // Sync position seulement si l'utilisateur écoute
+        if (isPlaying) {
+          if (Math.abs(music.currentTime - state.position) > 1) {
+            music.currentTime = state.position;
+          }
+          
+          if (music.paused) {
+            music.play().catch(() => {});
+          }
         }
-        
-        if (music.paused) {
-          music.play().catch(() => {});
-        }
-        
-        setIsPlaying(true);
-      } else {
-        music.pause();
-        setIsPlaying(false);
       }
     } catch (error) {
       console.error("[Radio sync error]:", error);
     }
-  }, []);
+  }, [isPlaying]);
 
   // Start polling for sync
   useEffect(() => {
@@ -96,30 +93,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [syncWithServer]);
 
   const playRadio = useCallback(async () => {
-    try {
-      await fetch("/api/radio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPlaying: true }),
-      });
-      await syncWithServer();
-    } catch (error) {
-      console.error("[Radio play error]:", error);
-    }
+    const music = musicRef.current;
+    if (!music) return;
+
+    setIsPlaying(true);
+    music.play().catch(() => {});
+    
+    // Sync immédiatement pour se mettre à jour
+    await syncWithServer();
   }, [syncWithServer]);
 
   const pauseRadio = useCallback(async () => {
-    try {
-      await fetch("/api/radio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPlaying: false }),
-      });
-      setIsPlaying(false);
-      musicRef.current?.pause();
-    } catch (error) {
-      console.error("[Radio pause error]:", error);
-    }
+    const music = musicRef.current;
+    if (!music) return;
+
+    setIsPlaying(false);
+    music.pause();
   }, []);
 
   return (
