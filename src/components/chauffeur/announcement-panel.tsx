@@ -30,7 +30,15 @@ export function AnnouncementPanel({
 
     const label = `Arrêt ${index + 1} — ${stop.name}`;
 
-    // Jouer l'annonce
+    // Diffuser l'annonce à tous les onglets via BroadcastChannel
+    const channel = new BroadcastChannel("crossbus-announcements");
+    channel.postMessage({
+      audioUrl: stop.audioUrl,
+      label,
+    });
+    channel.close();
+
+    // Jouer l'annonce localement aussi
     playAnnouncement(stop.audioUrl, label);
 
     // Mettre à jour la position du chauffeur
