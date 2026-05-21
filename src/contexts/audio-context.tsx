@@ -54,14 +54,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const music = musicRef.current;
       if (!music) return;
 
-      if (state.isPlaying) {
-        // Calculer le fichier audio basé sur l'index
-        const trackIndex = state.trackIndex % 15; // 15 pistes
-        const audioSrc = `/audio/music/track${trackIndex + 1}.mp3`;
+      if (state.isPlaying && state.tracks && state.tracks.length > 0) {
+        const track = state.tracks[state.trackIndex % state.tracks.length];
+        const audioSrc = track.src;
         
         if (music.src !== audioSrc) {
           music.src = audioSrc;
-          setCurrentTrackTitle(`Track ${trackIndex + 1}`);
+          setCurrentTrackTitle(track.title);
         }
         
         // Sync position
