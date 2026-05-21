@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
+
+// Fonction pour récupérer les pistes depuis le système de fichiers
+function getTracks() {
+  try {
+    const musicDir = path.join(process.cwd(), "public", "audio", "music");
+    
+    if (!fs.existsSync(musicDir)) {
+      return [];
+    }
+    
+    const files = fs.readdirSync(musicDir);
+    const mp3Files = files.filter(file => file.endsWith(".mp3") && file !== ".gitkeep");
+    
+    return mp3Files.map(file => ({
+      title: file.replace(".mp3", ""),
+      src: `/audio/music/${file}`,
+    }));
+  } catch (error) {
+    console.error("[Get tracks error]:", error);
+    return [];
+  }
+}
 
 // GET - Obtenir l'état actuel de la radio
 export async function GET() {
@@ -17,10 +41,8 @@ export async function GET() {
       });
     }
     
-    // Récupérer la liste des pistes
-    const tracksResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/radio/tracks`);
-    const tracksData = await tracksResponse.json();
-    const tracks = tracksData.tracks || [];
+    // Récupérer la liste des pistes directement
+    const tracks = getTracks();
     
     // Calculer la position actuelle si la radio joue
     let calculatedPosition = state.position;
@@ -57,10 +79,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { isPlaying } = body;
     
-    // Récupérer la liste des pistes
-    const tracksResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/radio/tracks`);
-    const tracksData = await tracksResponse.json();
-    const tracks = tracksData.tracks || [];
+    // Récupérer la liste des pistes directement
+    const tracks = getTracks();
     
     let state = await prisma.radioState.findFirst();
     
