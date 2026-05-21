@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useAudio } from "@/contexts/audio-context";
 import { announceStop } from "@/actions/shifts";
 
 type Stop = {
@@ -20,7 +19,6 @@ export function AnnouncementPanel({
   lineName: string;
   stops: Stop[];
 }) {
-  const { isAnnouncing, announcementError } = useAudio();
   const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -65,7 +63,7 @@ export function AnnouncementPanel({
           <button
             key={stop.id}
             type="button"
-            disabled={isAnnouncing || pending === stop.id}
+            disabled={pending === stop.id}
             onClick={() => handleAnnounce(stop, index)}
             className="flex items-center gap-4 rounded-md bg-surface p-4 text-left shadow-card transition hover:shadow-card-hover disabled:opacity-50"
           >
@@ -81,11 +79,6 @@ export function AnnouncementPanel({
           </button>
         ))}
       </div>
-      {announcementError && (
-        <p className="rounded-lg bg-accent-light px-3 py-2 text-sm text-accent">
-          {announcementError}
-        </p>
-      )}
     </div>
   );
 }
