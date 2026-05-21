@@ -192,6 +192,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const currentTime = music.currentTime;
     console.log("[Announcement] Saved state - wasPlaying:", wasPlayingRef.current, "src:", currentSrc, "time:", currentTime);
     
+    // Si la radio n'est pas en lecture, juste jouer l'annonce sans fade out
+    if (!isPlaying) {
+      console.log("[Announcement] Radio not playing, playing announcement directly");
+      chime.src = "/audio/sfx/chime.mp3";
+      chime.volume = volume;
+      chime.play().catch(() => {});
+      
+      chime.onended = () => {
+        console.log("[Announcement] Chime ended, playing announcement");
+        announcement.src = audioUrl;
+        announcement.volume = volume;
+        announcement.play().catch(() => {});
+        
+        announcement.onended = () => {
+          console.log("[Announcement] Announcement ended, not resuming (radio was not playing)");
+        };
+      };
+      return;
+    }
+    
     // Fade out de la musique sur 500ms
     const fadeOutInterval = setInterval(() => {
       if (music.volume > 0) {
