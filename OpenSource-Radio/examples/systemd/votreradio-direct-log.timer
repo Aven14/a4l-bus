@@ -1,0 +1,12 @@
+[Unit]
+Description=VotreRadio - Rafraîchissement périodique du journal DIRECT
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+Unit=votreradio-direct-log.service
+
+[Install]
+WantedBy=timers.target
+

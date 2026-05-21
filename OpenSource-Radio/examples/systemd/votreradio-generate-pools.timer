@@ -1,0 +1,11 @@
+[Unit]
+Description=VotreRadio - Génération quotidienne des pools à 04:05
+
+[Timer]
+OnCalendar=*-*-* 04:05:00
+Persistent=true
+Unit=votreradio-generate-pools.service
+
+[Install]
+WantedBy=timers.target
+

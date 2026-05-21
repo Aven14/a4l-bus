@@ -1,0 +1,11 @@
+[Unit]
+Description=VotreRadio - Nettoyage quotidien des artefacts macOS à 04:00
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=votreradio-clean-macos-artifacts.service
+
+[Install]
+WantedBy=timers.target
+

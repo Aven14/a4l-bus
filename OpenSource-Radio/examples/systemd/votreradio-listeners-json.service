@@ -1,0 +1,12 @@
+[Unit]
+Description=VotreRadio - Génération de listeners.json
+After=network-online.target icecast2.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=votreradio
+Group=votreradio
+EnvironmentFile=-/etc/votreradio/radio.env
+ExecStart=/usr/bin/python3 /home/votreradio/radio/scripts/write-listeners-json.py
+

@@ -1,0 +1,10 @@
+[Unit]
+Description=VotreRadio - Construction du journal des accès DIRECT
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /home/votreradio/radio/scripts/build-direct-log.py
+

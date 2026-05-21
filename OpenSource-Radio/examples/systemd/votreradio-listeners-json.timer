@@ -1,0 +1,12 @@
+[Unit]
+Description=VotreRadio - Rafraîchissement périodique de listeners.json
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=30s
+AccuracySec=1s
+Unit=votreradio-listeners-json.service
+
+[Install]
+WantedBy=timers.target
+

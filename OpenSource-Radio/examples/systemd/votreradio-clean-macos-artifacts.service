@@ -1,0 +1,11 @@
+[Unit]
+Description=VotreRadio - Nettoyage des artefacts macOS
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=votreradio
+Group=votreradio
+EnvironmentFile=-/etc/votreradio/radio.env
+ExecStart=/home/votreradio/radio/scripts/clean-macos-artifacts.sh
+

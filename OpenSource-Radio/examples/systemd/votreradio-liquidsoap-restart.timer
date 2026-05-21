@@ -1,0 +1,10 @@
+[Unit]
+Description=VotreRadio - Redémarrage quotidien de Liquidsoap à 04:10
+
+[Timer]
+OnCalendar=*-*-* 04:10:00
+Persistent=true
+Unit=votreradio-liquidsoap-restart.service
+
+[Install]
+WantedBy=timers.target

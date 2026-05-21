@@ -1,0 +1,14 @@
+[Unit]
+Description=VotreRadio - Génération des pools M3U
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=votreradio
+Group=votreradio
+EnvironmentFile=-/etc/votreradio/radio.env
+WorkingDirectory=/home/votreradio
+ExecStart=/usr/bin/python3 /home/votreradio/radio/scripts/generate_pools.py --config /home/votreradio/radio/config/pools.json
+Nice=10
+StandardOutput=journal
+StandardError=journal

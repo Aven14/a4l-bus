@@ -1,0 +1,6 @@
+[Unit]
+Description=VotreRadio - Redémarrage quotidien de Liquidsoap
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl restart liquidsoap

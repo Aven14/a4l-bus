@@ -43,41 +43,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Sync with server periodically
-  const syncWithServer = useCallback(async () => {
-    try {
-      const response = await fetch("/api/radio");
-      if (!response.ok) return;
-
-      const state = await response.json();
-      const music = musicRef.current;
-      if (!music) return;
-
-      if (state.tracks && state.tracks.length > 0) {
-        const track = state.tracks[state.trackIndex % state.tracks.length];
-        const audioSrc = track.src;
-        
-        if (music.src !== audioSrc) {
-          music.src = audioSrc;
-          setCurrentTrackTitle(track.title);
-        }
-        
-        // Sync position seulement si l'utilisateur écoute
-        if (isPlaying) {
-          if (Math.abs(music.currentTime - state.position) > 1) {
-            music.currentTime = state.position;
-          }
-          
-          if (music.paused) {
-            music.play().catch(() => {});
-          }
-        }
-      }
-    } catch (error) {
-      console.error("[Radio sync error]:", error);
-    }
-  }, [isPlaying]);
-
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
     if (!music) return;
@@ -89,12 +54,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       const state = await response.json();
       
-      if (state.tracks && state.tracks.length > 0) {
-        const track = state.tracks[state.trackIndex % state.tracks.length];
-        
+      if (state.track && state.tracks.length > 0) {
         // Charger la piste
-        music.src = track.src;
-        setCurrentTrackTitle(track.title);
+        const audioSrc = `/audio/music/${state.track}`;
+        music.src = audioSrc;
+        setCurrentTrackTitle(state.track.replace(".mp3", ""));
         
         // Mettre à la position actuelle de la radio
         music.currentTime = state.position;
