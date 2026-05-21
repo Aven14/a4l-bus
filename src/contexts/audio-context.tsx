@@ -82,12 +82,31 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const music = musicRef.current;
     if (!music) return;
 
-    // Sync une seule fois au démarrage
-    await syncWithServer();
-    
-    setIsPlaying(true);
-    music.play().catch(() => {});
-  }, [syncWithServer]);
+    try {
+      // Récupérer l'état actuel de la radio
+      const response = await fetch("/api/radio");
+      if (!response.ok) return;
+
+      const state = await response.json();
+      
+      if (state.tracks && state.tracks.length > 0) {
+        const track = state.tracks[state.trackIndex % state.tracks.length];
+        
+        // Charger la piste
+        music.src = track.src;
+        setCurrentTrackTitle(track.title);
+        
+        // Mettre à la position actuelle de la radio
+        music.currentTime = state.position;
+        
+        // Jouer
+        await music.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error("[Radio play error]:", error);
+    }
+  }, []);
 
   const pauseRadio = useCallback(async () => {
     const music = musicRef.current;
