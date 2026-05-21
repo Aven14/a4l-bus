@@ -104,13 +104,24 @@ export function calculateServerState(state: { isPlaying: boolean; startedAt: num
 export async function syncRadioClient(trackDurations: number[] = []) {
   const state = await getRadioState();
   
-  if (trackDurations.length > 0 && state.isPlaying && state.startedAt !== null) {
-    return calculateServerState(state, trackDurations);
+  const startedAtNumber = state.startedAt !== null ? Number(state.startedAt) : null;
+  
+  if (trackDurations.length > 0 && state.isPlaying && startedAtNumber !== null) {
+    return calculateServerState(
+      {
+        isPlaying: state.isPlaying,
+        startedAt: startedAtNumber,
+        trackIndex: state.trackIndex,
+        position: state.position,
+      },
+      trackDurations
+    );
   }
   
   return {
     trackIndex: state.trackIndex,
     position: state.position,
     isPlaying: state.isPlaying,
+    startedAt: startedAtNumber,
   };
 }
