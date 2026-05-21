@@ -169,10 +169,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const playRadio = useCallback(async () => {
     const music = musicRef.current;
-    const tracks = tracksRef.current;
+    let tracks = tracksRef.current;
+
+    // Si pas de pistes chargées, attendre le chargement
+    if (tracks.length === 0) {
+      console.log("[Radio] Loading tracks before play...");
+      try {
+        const fetchedTracks = await fetchRadioTracks();
+        const tracksWithDurations = await loadTracksWithDurations(fetchedTracks);
+        tracksRef.current = tracksWithDurations;
+        trackDurationsRef.current = tracksWithDurations.map(t => t.duration);
+        tracks = tracksWithDurations;
+        console.log(`[Radio] ${tracksWithDurations.length} tracks loaded`);
+      } catch (error) {
+        console.error("[Radio] Failed to load tracks:", error);
+        return;
+      }
+    }
 
     if (!music || tracks.length === 0) {
-      console.warn("[Radio] No tracks loaded yet");
+      console.warn("[Radio] No tracks available");
       return;
     }
 
