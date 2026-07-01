@@ -6,11 +6,11 @@
   --color-ink: #0f172a;
   --color-muted: #64748b;
   --color-line: #e2e8f0;
-  --color-primary: #1d4ed8;
-  --color-primary-dark: #1e3a8a;
-  --color-primary-light: #dbeafe;
-  --color-accent: #dc2626;
-  --color-accent-light: #fee2e2;
+  --color-primary: #1D84D8;
+  --color-primary-dark: #194A78;
+  --color-primary-light: #BFE2FF;
+  --color-accent: #26A5DC;
+  --color-accent-light: #CCEFFF;
   --font-sans: var(--font-jakarta), system-ui, sans-serif;
   --radius-card: 0.5rem;
   --radius-control: 0.375rem;
