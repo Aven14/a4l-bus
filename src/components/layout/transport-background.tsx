@@ -50,9 +50,9 @@ export function TransportBackground() {
     const draw = () => {
       // Dessiner le gradient de fond
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, "#f8fafc");
-      gradient.addColorStop(0.5, "#f4f7fc");
-      gradient.addColorStop(1, "#eef2ff");
+      gradient.addColorStop(0, "#d1d5db");
+      gradient.addColorStop(0.5, "#e5e7eb");
+      gradient.addColorStop(1, "#d1d5db");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
