@@ -87,7 +87,7 @@ body {
 }
 
 .panel-highlight {
-  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 55%, #eff6ff 100%);
+  background: linear-gradient(165deg, #ffffff7c 0%, #f8fafc 55%, #eff6ff 100%);
   border: none;
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-panel-strong);
