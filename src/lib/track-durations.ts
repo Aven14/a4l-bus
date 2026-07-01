@@ -18,6 +18,32 @@ export function getMusicTracks(): string[] {
     .sort((a, b) => a.localeCompare(b, "fr"));
 }
 
+export function shuffleTracks(tracks: string[]): string[] {
+  const shuffled = [...tracks];
+
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled;
+}
+
+export function normalizePlaylist(
+  tracks: string[],
+  existingOrder: string[] = []
+): string[] {
+  const trackSet = new Set(tracks);
+  const filtered = existingOrder.filter((track) => trackSet.has(track));
+  const missing = tracks.filter((track) => !filtered.includes(track));
+
+  if (filtered.length === tracks.length && filtered.length > 0) {
+    return filtered;
+  }
+
+  return shuffleTracks([...filtered, ...missing]);
+}
+
 async function loadTrackDurations(): Promise<Map<string, number>> {
   const tracks = getMusicTracks();
   const durations = new Map<string, number>();
@@ -68,30 +94,38 @@ export function getTrackDuration(
 export function advanceTrackPosition(
   trackIndex: number,
   position: number,
-  tracks: string[],
+  playlist: string[],
   durations: Map<string, number>
-): { trackIndex: number; position: number } {
-  if (tracks.length === 0) {
-    return { trackIndex: 0, position: 0 };
+): {
+  trackIndex: number;
+  position: number;
+  needsReshuffle: boolean;
+} {
+  if (playlist.length === 0) {
+    return { trackIndex: 0, position: 0, needsReshuffle: false };
   }
 
-  let idx = ((trackIndex % tracks.length) + tracks.length) % tracks.length;
+  let idx = ((trackIndex % playlist.length) + playlist.length) % playlist.length;
   let pos = position;
   let guard = 0;
 
-  while (tracks.length > 0 && guard < tracks.length * 2) {
+  while (playlist.length > 0 && guard < playlist.length * 2) {
     guard += 1;
-    const duration = getTrackDuration(tracks[idx], durations);
+    const duration = getTrackDuration(playlist[idx], durations);
 
     if (pos < duration) {
-      return { trackIndex: idx, position: pos };
+      return { trackIndex: idx, position: pos, needsReshuffle: false };
     }
 
     pos -= duration;
-    idx = (idx + 1) % tracks.length;
+    idx += 1;
+
+    if (idx >= playlist.length) {
+      return { trackIndex: 0, position: 0, needsReshuffle: true };
+    }
   }
 
-  return { trackIndex: idx, position: 0 };
+  return { trackIndex: idx, position: 0, needsReshuffle: false };
 }
 
 export function durationsToRecord(durations: Map<string, number>) {

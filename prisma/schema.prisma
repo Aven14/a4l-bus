@@ -26,6 +26,7 @@ model User {
   shifts        DriverShift[]
   issuedTickets Ticket[]      @relation("IssuedTickets")
   activityLogs  ActivityLog[] @relation("UserLogs")
+  issuedBans    BusBan[]      @relation("IssuedBans")
 
   @@index([roles])
 }
@@ -127,12 +128,28 @@ model ActivityLog {
 }
 
 model RadioState {
-  id         String   @id @default(cuid())
-  trackIndex Int      @default(0)
-  position   Float    @default(0)
-  isPlaying  Boolean  @default(false)
-  startedAt  BigInt?
-  lastSync   DateTime @default(now())
+  id            String   @id @default(cuid())
+  trackIndex    Int      @default(0)
+  position      Float    @default(0)
+  isPlaying     Boolean  @default(false)
+  startedAt     BigInt?
+  playlistOrder String[] @default([])
+  lastSync      DateTime @default(now())
 
   @@index([lastSync])
+}
+
+model BusBan {
+  id         String    @id @default(cuid())
+  firstname  String
+  lastname   String
+  reason     String?
+  bannedById String
+  bannedBy   User      @relation("IssuedBans", fields: [bannedById], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  liftedAt   DateTime?
+
+  @@index([firstname, lastname])
+  @@index([liftedAt])
+  @@index([createdAt])
 }

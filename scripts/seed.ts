@@ -46,7 +46,8 @@ async function seed() {
       id: "default-radio-state",
       trackIndex: 0,
       position: 0,
-      isPlaying: false,
+      isPlaying: true,
+      playlistOrder: [],
     },
   });
 

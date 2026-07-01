@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { hasAnyRole, hasRole } from "@/lib/roles";
 import { getAllTickets } from "@/actions/tickets";
 import { TicketsList } from "@/components/controleur/tickets-list";
+import { BanPassengerForm } from "@/components/controleur/ban-passenger-form";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function ControleurPage() {
@@ -27,7 +28,10 @@ export default async function ControleurPage() {
         title="Contrôle des billets"
         subtitle={`${user.firstname} ${user.lastname}`}
       />
-      <TicketsList initialTickets={tickets} />
+      <div className="space-y-8">
+        <BanPassengerForm />
+        <TicketsList initialTickets={tickets} />
+      </div>
     </div>
   );
 }

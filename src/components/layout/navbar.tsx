@@ -18,19 +18,17 @@ type NavUser = {
 type NavItem = {
   href: string;
   label: string;
-  /** Actif aussi pour `/lignes/xxx` si href est `/lignes` */
   matchPrefix?: string;
 };
 
 function linksForRoles(roles: UserRole[]): NavItem[] {
-  const links: NavItem[] = [
-    { href: "/espace-personnel", label: "Mon espace" },
-  ];
+  const links: NavItem[] = [];
 
   if (hasRole(roles, "DRIVER") || hasRole(roles, "ADMIN")) {
     links.push(
       { href: "/chauffeur", label: "Mon service" },
-      { href: "/chauffeur/annonces", label: "Annonces" }
+      { href: "/chauffeur/annonces", label: "Annonces" },
+      { href: "/chauffeur/bannis", label: "Personnes bannies" }
     );
   }
   if (hasRole(roles, "CONTROLLER") || hasRole(roles, "ADMIN")) {
@@ -40,12 +38,7 @@ function linksForRoles(roles: UserRole[]): NavItem[] {
     links.push({ href: "/admin", label: "Admin" });
   }
 
-  const seen = new Set<string>();
-  return links.filter((l) => {
-    if (seen.has(l.href)) return false;
-    seen.add(l.href);
-    return true;
-  });
+  return links;
 }
 
 function NavLink({
@@ -62,7 +55,7 @@ function NavLink({
       href={href}
       prefetch={true}
       className={cn(
-        "shrink-0 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3",
+        "block rounded-md px-3 py-2.5 text-sm font-medium transition",
         active
           ? "bg-primary text-white shadow-card"
           : "text-muted hover:bg-primary-light/40 hover:text-primary"
@@ -77,7 +70,7 @@ export function Navbar({ user }: { user: NavUser | null }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const leftLinks = useMemo<NavItem[]>(() => {
+  const mainLinks = useMemo<NavItem[]>(() => {
     return [
       { href: "/", label: "Accueil" },
       { href: "/lignes", label: "Lignes", matchPrefix: "/lignes" },
@@ -92,71 +85,78 @@ export function Navbar({ user }: { user: NavUser | null }) {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full max-w-[100vw] overflow-x-hidden border-b border-line/70 bg-surface/95 shadow-elevated backdrop-blur-md">
-      <div className="mx-auto grid h-14 w-full max-w-[100vw] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 sm:h-[3.75rem] sm:gap-3 sm:px-5 lg:px-8">
-        <nav className="flex min-w-0 items-center gap-0.5 justify-self-start overflow-x-auto overflow-y-hidden py-0.5 scrollbar-hide sm:gap-1">
-          {leftLinks.map((link) => (
-            <NavLink
-              key={link.href}
-              href={link.href}
-              label={link.label}
-              active={
-                link.matchPrefix
-                  ? pathname === link.href ||
-                    pathname.startsWith(`${link.matchPrefix}/`)
-                  : pathname === link.href
-              }
-            />
-          ))}
-        </nav>
-
-        <div className="shrink-0 justify-self-center px-1">
-          <Link
-            href="/"
-            prefetch={true}
-            className="block transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <BrandLogo variant="navbarCenter" compact />
-          </Link>
-        </div>
-
-        <div className="flex min-w-0 items-center justify-end justify-self-end gap-1.5 sm:gap-3">
-          {!user ? (
-            <>
-              <Link
-                href="/connexion"
-                prefetch={true}
-                className="shrink-0 rounded-md px-2 py-2 text-xs font-semibold text-primary hover:bg-primary-light/50 sm:px-3 sm:text-sm"
-              >
-                <span className="hidden sm:inline">Connexion</span>
-                <span className="sm:hidden">🔑</span>
-              </Link>
-              <Link
-                href="/inscription"
-                prefetch={true}
-                className="btn-primary shrink-0 px-2.5 py-2 text-xs sm:px-4 sm:text-sm"
-              >
-                <span className="hidden sm:inline">Inscription</span>
-                <span className="sm:hidden">✍️</span>
-              </Link>
-            </>
-          ) : (
-            <>
-              <span className="hidden max-w-[min(10rem,28vw)] truncate text-xs font-medium text-muted sm:inline md:max-w-[14rem] md:text-sm">
-                {user.firstname} {user.lastname}
-              </span>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="shrink-0 rounded-md bg-accent-light px-2.5 py-2 text-xs font-semibold text-accent shadow-card transition hover:shadow-card-hover sm:px-4 sm:text-sm"
-              >
-                <span className="hidden sm:inline">Déconnexion</span>
-                <span className="sm:hidden">🚪</span>
-              </button>
-            </>
-          )}
-        </div>
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-56 flex-col border-r border-line/70 bg-surface/95 shadow-elevated backdrop-blur-md">
+      <div className="border-b border-line/70 px-4 py-4">
+        <Link
+          href="/"
+          prefetch={true}
+          className="block transition-opacity hover:opacity-90"
+        >
+          <BrandLogo compact />
+        </Link>
       </div>
-    </header>
+
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {mainLinks.map((link) => (
+          <NavLink
+            key={link.href}
+            href={link.href}
+            label={link.label}
+            active={
+              link.matchPrefix
+                ? pathname === link.href ||
+                  pathname.startsWith(`${link.matchPrefix}/`)
+                : pathname === link.href
+            }
+          />
+        ))}
+      </nav>
+
+      <div className="space-y-2 border-t border-line/70 px-3 py-4">
+        {!user ? (
+          <>
+            <Link
+              href="/connexion"
+              prefetch={true}
+              className="block rounded-md px-3 py-2.5 text-sm font-semibold text-primary hover:bg-primary-light/50"
+            >
+              Connexion
+            </Link>
+            <Link
+              href="/inscription"
+              prefetch={true}
+              className="btn-primary block px-3 py-2.5 text-center text-sm"
+            >
+              Inscription
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/espace-personnel"
+              prefetch={true}
+              className={cn(
+                "block rounded-md px-3 py-2.5 text-sm font-medium transition",
+                pathname === "/espace-personnel"
+                  ? "bg-primary text-white shadow-card"
+                  : "text-muted hover:bg-primary-light/40 hover:text-primary"
+              )}
+            >
+              Mon espace
+            </Link>
+            <p className="truncate px-3 text-xs text-muted">
+              {user.firstname} {user.lastname}
+            </p>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full rounded-md bg-accent-light px-3 py-2.5 text-sm font-semibold text-accent shadow-card transition hover:shadow-card-hover"
+            >
+              Déconnexion
+            </button>
+          </>
+        )}
+      </div>
+    </aside>
   );
 }
