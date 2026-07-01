@@ -16,9 +16,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Cross Track Bus — Réseau transport RP",
+  title: "ClearBus — Réseau transport RP",
   description:
-    "Portail officiel Cross Track Bus pour le serveur Arma 3 RP. Radio, annonces, billets et contrôle.",
+    "Portail officiel ClearBus pour le serveur Arma 3 RP. Radio, annonces, billets et contrôle.",
 };
 
 export default async function RootLayout({

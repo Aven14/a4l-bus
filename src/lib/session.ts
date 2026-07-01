@@ -118,7 +118,7 @@ export async function ensureBootstrapAdmin(): Promise<void> {
       email,
       passwordHash: await hashPassword(password),
       firstname: "Admin",
-      lastname: "Cross Track Bus",
+      lastname: "ClearBus",
       roles: ["ADMIN"],
     },
   });

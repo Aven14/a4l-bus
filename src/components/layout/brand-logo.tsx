@@ -44,7 +44,7 @@ export function BrandLogo({
               light ? "text-white" : "text-ink"
             )}
           >
-            Cross Track{" "}
+            Clear
             <span className={light ? "text-white" : "text-gradient-brand"}>Bus</span>
           </span>
           <span
@@ -70,7 +70,7 @@ export function BrandLogo({
             light ? "text-white" : "text-ink"
           )}
         >
-          Cross Track
+          Clear
         </span>
         <span
           className={cn(

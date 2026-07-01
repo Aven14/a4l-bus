@@ -25,7 +25,7 @@ export function RadioPlayer() {
         
         <div className="flex flex-col">
           <span className="text-white font-medium text-sm">
-            {currentTrackTitle || "Radio CrossBus"}
+            {currentTrackTitle || "Radio ClearBus"}
           </span>
           <span className="text-gray-400 text-xs">
             {isPlaying ? "Synchronisé" : "Appuyez pour écouter"}

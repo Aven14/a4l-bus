@@ -1,6 +1,6 @@
-# CrossBus — Portail transport RP Arma 3
+# ClearBus — Portail transport RP Arma 3
 
-Site web immersif pour le réseau de transport **CrossBus** : radio, annonces sonores, billets et contrôle.
+Site web immersif pour le réseau de transport **ClearBus** : radio, annonces sonores, billets et contrôle.
 
 ## Stack
 

@@ -55,11 +55,11 @@ export default async function HomePage() {
               Réseau actif · Vice City
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight text-ink md:text-5xl lg:text-6xl">
-              Cross Track{" "}
+              Clear
               <span className="text-gradient-brand">Bus</span>
             </h1>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
-              Site du CTB avec radio et annonces des lignes
+              Site ClearBus avec radio et annonces des lignes
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={espaceHref} className="btn-primary">

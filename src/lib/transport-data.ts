@@ -85,9 +85,9 @@ export const TRANSPORT_LINES: LineDef[] = [
 export const CHIME_PATH = "/audio/sfx/chime.mp3";
 
 export const RADIO_TRACKS = [
-  { id: "track-1", title: "CTB Radio — Ligne urbaine", src: "/audio/music/track1.mp3" },
-  { id: "track-2", title: "CTB Radio — Circulation", src: "/audio/music/track2.mp3" },
-  { id: "track-3", title: "CTB Radio — Réseau nuit", src: "/audio/music/track3.mp3" },
+  { id: "track-1", title: "ClearBus Radio — Ligne urbaine", src: "/audio/music/track1.mp3" },
+  { id: "track-2", title: "ClearBus Radio — Circulation", src: "/audio/music/track2.mp3" },
+  { id: "track-3", title: "ClearBus Radio — Réseau nuit", src: "/audio/music/track3.mp3" },
 ];
 
 export type TicketType = "Single Trip" | "Day Pass" | "Week Pass" | "Lifetime Pass";
