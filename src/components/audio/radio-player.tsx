@@ -28,7 +28,7 @@ export function RadioPlayer() {
             {currentTrackTitle || "Radio CrossBus"}
           </span>
           <span className="text-gray-400 text-xs">
-            {isPlaying ? "En lecture" : "En pause"}
+            {isPlaying ? "Synchronisé" : "Appuyez pour écouter"}
           </span>
         </div>
         

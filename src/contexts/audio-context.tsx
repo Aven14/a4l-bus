@@ -9,6 +9,22 @@ import React, {
   useState,
 } from "react";
 
+type SyncedRadioState = {
+  trackIndex: number;
+  position: number;
+  track: string | null;
+  tracks: string[];
+  isPlaying: boolean;
+  revision: number;
+};
+
+type LiveAnnouncementPayload = {
+  id: string;
+  audioUrl: string;
+  label: string;
+  createdAt: string;
+};
+
 interface AudioContextType {
   isPlaying: boolean;
   currentTrackTitle: string | null;
@@ -21,256 +37,283 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
+const SYNC_INTERVAL_MS = 2000;
+const ANNOUNCEMENT_POLL_MS = 1500;
+const DRIFT_THRESHOLD_S = 1.5;
+
+function trackTitle(filename: string | null) {
+  return filename ? filename.replace(/\.mp3$/i, "") : null;
+}
+
+function trackSrc(filename: string) {
+  return `/audio/music/${encodeURIComponent(filename)}`;
+}
+
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTrackTitle, setCurrentTrackTitle] = useState<string | null>(null);
+  const [currentTrackTitle, setCurrentTrackTitle] = useState<string | null>(
+    null
+  );
   const [volume, setVolume] = useState(0.5);
 
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const announcementRef = useRef<HTMLAudioElement | null>(null);
   const chimeRef = useRef<HTMLAudioElement | null>(null);
-  const wasPlayingRef = useRef(false);
-  const broadcastRef = useRef<BroadcastChannel | null>(null);
 
-  // Set volume on music element when it changes
+  const userWantsRadioRef = useRef(false);
+  const lastRevisionRef = useRef<number | null>(null);
+  const syncInFlightRef = useRef(false);
+
+  const announcementQueueRef = useRef<LiveAnnouncementPayload[]>([]);
+  const playedAnnouncementIdsRef = useRef<Set<string>>(new Set());
+  const isPlayingAnnouncementRef = useRef(false);
+  const lastPollAfterRef = useRef(new Date(0).toISOString());
+
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const syncWithServerRef = useRef<() => Promise<void>>(async () => {});
+
   useEffect(() => {
-    if (musicRef.current) {
-      musicRef.current.volume = volume;
-    }
-    if (announcementRef.current) {
-      announcementRef.current.volume = volume;
-    }
-    if (chimeRef.current) {
-      chimeRef.current.volume = volume;
-    }
+    if (musicRef.current) musicRef.current.volume = volume;
+    if (announcementRef.current) announcementRef.current.volume = volume;
+    if (chimeRef.current) chimeRef.current.volume = volume;
   }, [volume]);
 
-  // Initialize audio elements and BroadcastChannel
+  const playAnnouncementSequence = useCallback(
+    (audioUrl: string) =>
+      new Promise<void>((resolve) => {
+        const chime = chimeRef.current;
+        const announcement = announcementRef.current;
+        if (!announcement) {
+          resolve();
+          return;
+        }
+
+        const playAnnouncementAudio = () => {
+          announcement.src = audioUrl;
+          announcement.volume = volumeRef.current;
+          announcement.onended = () => resolve();
+          announcement.play().catch(() => resolve());
+        };
+
+        if (!chime) {
+          playAnnouncementAudio();
+          return;
+        }
+
+        chime.src = "/audio/sfx/chime.mp3";
+        chime.volume = volumeRef.current;
+        chime.onended = playAnnouncementAudio;
+        chime.play().catch(playAnnouncementAudio);
+      }),
+    []
+  );
+
+  const processAnnouncementQueue = useCallback(async () => {
+    if (isPlayingAnnouncementRef.current) return;
+
+    const next = announcementQueueRef.current.shift();
+    if (!next) return;
+
+    isPlayingAnnouncementRef.current = true;
+
+    try {
+      await playAnnouncementSequence(next.audioUrl);
+
+      if (!next.id.startsWith("local-")) {
+        await fetch(`/api/announcements/${next.id}/complete`, {
+          method: "POST",
+        });
+      }
+
+      playedAnnouncementIdsRef.current.add(next.id);
+    } catch (error) {
+      console.error("[Announcement queue error]:", error);
+    } finally {
+      isPlayingAnnouncementRef.current = false;
+      if (announcementQueueRef.current.length > 0) {
+        void processAnnouncementQueue();
+      } else {
+        void syncWithServerRef.current();
+      }
+    }
+  }, [playAnnouncementSequence]);
+
+  const pollAnnouncements = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/announcements?after=${encodeURIComponent(lastPollAfterRef.current)}`,
+        { cache: "no-store" }
+      );
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const announcements: LiveAnnouncementPayload[] = data.announcements ?? [];
+
+      for (const announcement of announcements) {
+        if (playedAnnouncementIdsRef.current.has(announcement.id)) continue;
+
+        announcementQueueRef.current.push(announcement);
+
+        if (announcement.createdAt > lastPollAfterRef.current) {
+          lastPollAfterRef.current = announcement.createdAt;
+        }
+      }
+
+      void processAnnouncementQueue();
+    } catch (error) {
+      console.error("[Announcement poll error]:", error);
+    }
+  }, [processAnnouncementQueue]);
+
+  const applySyncedState = useCallback(async (state: SyncedRadioState) => {
+    const music = musicRef.current;
+    if (!music) return;
+
+    if (state.track) {
+      setCurrentTrackTitle(trackTitle(state.track));
+    }
+
+    if (!userWantsRadioRef.current) {
+      setIsPlaying(false);
+      return;
+    }
+
+    const announcementActive =
+      isPlayingAnnouncementRef.current ||
+      announcementQueueRef.current.length > 0;
+
+    if (!state.isPlaying || !state.track || announcementActive) {
+      if (!music.paused) {
+        music.pause();
+      }
+      setIsPlaying(false);
+      return;
+    }
+
+    const expectedSrc = trackSrc(state.track);
+    const currentFilename = decodeURIComponent(
+      music.src.split("/").pop() || ""
+    );
+
+    if (currentFilename !== state.track || !music.src) {
+      music.src = expectedSrc;
+      music.load();
+    }
+
+    const drift = Math.abs(music.currentTime - state.position);
+    if (drift > DRIFT_THRESHOLD_S) {
+      music.currentTime = state.position;
+    }
+
+    music.volume = volumeRef.current;
+
+    if (music.paused) {
+      try {
+        await music.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+    } else {
+      setIsPlaying(true);
+    }
+  }, []);
+
+  const syncWithServer = useCallback(async () => {
+    if (syncInFlightRef.current) return;
+    syncInFlightRef.current = true;
+
+    try {
+      const response = await fetch("/api/radio/sync", { cache: "no-store" });
+      if (!response.ok) return;
+
+      const state: SyncedRadioState = await response.json();
+      const revisionChanged =
+        lastRevisionRef.current !== null &&
+        lastRevisionRef.current !== state.revision;
+
+      lastRevisionRef.current = state.revision;
+      await applySyncedState(state);
+
+      if (revisionChanged && userWantsRadioRef.current) {
+        await applySyncedState(state);
+      }
+    } catch (error) {
+      console.error("[Radio sync error]:", error);
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  }, [applySyncedState]);
+
+  syncWithServerRef.current = syncWithServer;
+
   useEffect(() => {
     if (!musicRef.current) {
       const audio = new Audio();
       audio.preload = "auto";
       musicRef.current = audio;
-      
-      // Changer de piste automatiquement à la fin
+
       audio.addEventListener("ended", () => {
-        playNextTrack();
+        void syncWithServer();
       });
     }
-    
+
     if (!announcementRef.current) {
       const audio = new Audio();
       audio.preload = "auto";
       announcementRef.current = audio;
     }
-    
+
     if (!chimeRef.current) {
       const audio = new Audio();
       audio.preload = "auto";
       chimeRef.current = audio;
     }
-    
-    // BroadcastChannel pour annonces globales
-    if (!broadcastRef.current) {
-      broadcastRef.current = new BroadcastChannel("crossbus-announcements");
-      broadcastRef.current.onmessage = (event) => {
-        const { audioUrl, label } = event.data;
-        playAnnouncement(audioUrl, label);
-      };
-    }
-    
+
+    void syncWithServer();
+    void pollAnnouncements();
+
+    const syncInterval = setInterval(() => {
+      void syncWithServer();
+    }, SYNC_INTERVAL_MS);
+
+    const announcementInterval = setInterval(() => {
+      void pollAnnouncements();
+    }, ANNOUNCEMENT_POLL_MS);
+
     return () => {
-      if (broadcastRef.current) {
-        broadcastRef.current.close();
-      }
+      clearInterval(syncInterval);
+      clearInterval(announcementInterval);
     };
-  }, []);
-
-  const playNextTrack = useCallback(async () => {
-    const music = musicRef.current;
-    if (!music) return;
-
-    try {
-      // Récupérer la liste des pistes
-      const response = await fetch("/api/radio");
-      if (!response.ok) return;
-
-      const state = await response.json();
-      
-      if (state.tracks && state.tracks.length > 0) {
-        // Trouver l'index actuel et passer au suivant
-        const currentTrack = music.src.split('/').pop();
-        let currentIndex = state.tracks.indexOf(currentTrack || "");
-        if (currentIndex === -1) currentIndex = 0;
-        
-        const nextIndex = (currentIndex + 1) % state.tracks.length;
-        const nextTrack = state.tracks[nextIndex];
-        
-        // Charger la piste suivante au début
-        const audioSrc = `/audio/music/${nextTrack}`;
-        music.src = audioSrc;
-        setCurrentTrackTitle(nextTrack.replace(".mp3", ""));
-        music.currentTime = 0;
-        
-        // Jouer avec fade in
-        music.volume = 0;
-        await music.play();
-        setIsPlaying(true);
-        
-        // Fade in sur 500ms
-        const fadeInInterval = setInterval(() => {
-          if (music.volume < volume) {
-            music.volume = Math.min(music.volume + 0.05, volume);
-          } else {
-            clearInterval(fadeInInterval);
-          }
-        }, 25);
-      }
-    } catch (error) {
-      console.error("[Radio next track error]:", error);
-    }
-  }, [volume]);
+  }, [syncWithServer, pollAnnouncements]);
 
   const playRadio = useCallback(async () => {
+    userWantsRadioRef.current = true;
+    await syncWithServer();
+  }, [syncWithServer]);
+
+  const pauseRadio = useCallback(() => {
+    userWantsRadioRef.current = false;
     const music = musicRef.current;
-    if (!music) return;
-
-    try {
-      // Récupérer l'état actuel de la radio
-      const response = await fetch("/api/radio");
-      if (!response.ok) return;
-
-      const state = await response.json();
-      
-      if (state.track && state.tracks.length > 0) {
-        // Charger la piste
-        const audioSrc = `/audio/music/${state.track}`;
-        music.src = audioSrc;
-        setCurrentTrackTitle(state.track.replace(".mp3", ""));
-        
-        // Mettre à la position actuelle de la radio
-        music.currentTime = state.position;
-        
-        // Jouer avec fade in
-        music.volume = 0;
-        await music.play();
-        setIsPlaying(true);
-        
-        // Fade in sur 500ms
-        const fadeInInterval = setInterval(() => {
-          if (music.volume < volume) {
-            music.volume = Math.min(music.volume + 0.05, volume);
-          } else {
-            clearInterval(fadeInInterval);
-          }
-        }, 25);
-      }
-    } catch (error) {
-      console.error("[Radio play error]:", error);
+    if (music) {
+      music.pause();
     }
-  }, [volume]);
-
-  const pauseRadio = useCallback(async () => {
-    const music = musicRef.current;
-    if (!music) return;
-
     setIsPlaying(false);
-    music.pause();
   }, []);
 
-  const playAnnouncement = useCallback((audioUrl: string, label: string) => {
-    const music = musicRef.current;
-    const announcement = announcementRef.current;
-    const chime = chimeRef.current;
-    if (!music || !announcement || !chime) return;
-
-    console.log("[Announcement] Starting announcement:", label);
-    
-    // Vérifier l'état réel de l'audio
-    const actuallyPlaying = !music.paused && music.src !== "";
-    console.log("[Announcement] Audio state - isPlaying:", isPlaying, "actuallyPlaying:", actuallyPlaying, "paused:", music.paused, "src:", music.src);
-    
-    // Sauvegarder l'état de la radio
-    wasPlayingRef.current = actuallyPlaying;
-    const currentSrc = music.src;
-    const currentTime = music.currentTime;
-    console.log("[Announcement] Saved state - wasPlaying:", wasPlayingRef.current, "src:", currentSrc, "time:", currentTime);
-    
-    // Si la radio n'est pas en lecture, juste jouer l'annonce sans fade out
-    if (!actuallyPlaying) {
-      console.log("[Announcement] Radio not playing, playing announcement directly");
-      chime.src = "/audio/sfx/chime.mp3";
-      chime.volume = volume;
-      chime.play().catch(() => {});
-      
-      chime.onended = () => {
-        console.log("[Announcement] Chime ended, playing announcement");
-        announcement.src = audioUrl;
-        announcement.volume = volume;
-        announcement.play().catch(() => {});
-        
-        announcement.onended = () => {
-          console.log("[Announcement] Announcement ended, not resuming (radio was not playing)");
-        };
-      };
-      return;
-    }
-    
-    // Fade out de la musique sur 500ms
-    const fadeOutInterval = setInterval(() => {
-      if (music.volume > 0) {
-        music.volume = Math.max(music.volume - 0.05, 0);
-      } else {
-        clearInterval(fadeOutInterval);
-        music.pause();
-        console.log("[Announcement] Music paused");
-        
-        // Jouer le chime
-        chime.src = "/audio/sfx/chime.mp3";
-        chime.volume = volume;
-        chime.play().catch(() => {});
-        console.log("[Announcement] Chime playing");
-        
-        // Après le chime, jouer l'annonce
-        chime.onended = () => {
-          console.log("[Announcement] Chime ended, playing announcement");
-          announcement.src = audioUrl;
-          announcement.volume = volume;
-          announcement.play().catch(() => {});
-          
-          // Après l'annonce, reprendre la radio avec fade in
-          announcement.onended = () => {
-            console.log("[Announcement] Announcement ended, wasPlaying:", wasPlayingRef.current);
-            if (wasPlayingRef.current) {
-              console.log("[Announcement] Resuming music");
-              // Reprendre exactement où on était
-              music.src = currentSrc;
-              music.currentTime = currentTime;
-              music.volume = 0;
-              music.play().then(() => {
-                setIsPlaying(true);
-                console.log("[Announcement] Music resumed");
-                
-                // Fade in sur 500ms
-                const fadeInInterval = setInterval(() => {
-                  if (music.volume < volume) {
-                    music.volume = Math.min(music.volume + 0.05, volume);
-                  } else {
-                    clearInterval(fadeInInterval);
-                    console.log("[Announcement] Fade in complete");
-                  }
-                }, 25);
-              }).catch((err) => {
-                console.error("[Announcement] Error resuming music:", err);
-              });
-            } else {
-              console.log("[Announcement] Not resuming - wasPlaying was false");
-            }
-          };
-        };
-      }
-    }, 25);
-  }, [isPlaying, volume]);
+  const playAnnouncement = useCallback(
+    (audioUrl: string, _label: string) => {
+      announcementQueueRef.current.push({
+        id: `local-${Date.now()}`,
+        audioUrl,
+        label: _label,
+        createdAt: new Date().toISOString(),
+      });
+      void processAnnouncementQueue();
+    },
+    [processAnnouncementQueue]
+  );
 
   return (
     <AudioContext.Provider

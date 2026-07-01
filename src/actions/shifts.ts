@@ -182,10 +182,9 @@ export async function announceStop(stopId: string) {
     return { success: false, error: "Arrêt non valide pour cette ligne." };
   }
 
+  const label = `Arrêt ${stop.order + 1} — ${stop.name}`;
+
   try {
-    // Logique simplifiée :
-    // - On stocke juste l'arrêt annoncé comme "currentStopId"
-    // - Pas de destination, juste la position actuelle
     await prisma.driverShift.update({
       where: { id: shift.id },
       data: {
@@ -194,12 +193,21 @@ export async function announceStop(stopId: string) {
       },
     });
 
-    // Retourner les données de l'annonce pour diffusion côté client
+    const { createLiveAnnouncement } = await import("@/actions/announcements");
+    const announcement = await createLiveAnnouncement({
+      audioUrl: stop.audioUrl,
+      label,
+      lineId: shift.lineId,
+    });
+
+    revalidatePath(`/lignes/l${shift.line.number}/suivi`);
+
     return {
       success: true,
       announcement: {
+        id: announcement.id,
         audioPath: stop.audioUrl,
-        label: `Arrêt ${stop.order + 1} — ${stop.name}`,
+        label,
       },
     };
   } catch {

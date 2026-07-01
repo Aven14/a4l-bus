@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useAudio } from "@/contexts/audio-context";
 import { announceStop } from "@/actions/shifts";
 
 type Stop = {
@@ -20,7 +19,6 @@ export function AnnouncementPanel({
   lineName: string;
   stops: Stop[];
 }) {
-  const { playAnnouncement } = useAudio();
   const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -29,23 +27,12 @@ export function AnnouncementPanel({
     setMessage(null);
 
     const label = `Arrêt ${index + 1} — ${stop.name}`;
-
-    // Diffuser l'annonce à tous les onglets via BroadcastChannel
-    const channel = new BroadcastChannel("crossbus-announcements");
-    channel.postMessage({
-      audioUrl: stop.audioUrl,
-      label,
-    });
-    channel.close();
-
-    // Jouer l'annonce localement aussi
-    playAnnouncement(stop.audioUrl, label);
-
-    // Mettre à jour la position du chauffeur
     const result = await announceStop(stop.id);
-    
+
     if (result.success) {
-      setMessage(`✓ Annonce diffusée : ${label}`);
+      setMessage(`✓ Annonce diffusée à tous les passagers : ${label}`);
+    } else {
+      setMessage(result.error ?? "Erreur lors de l'annonce.");
     }
 
     setPending(null);
@@ -56,7 +43,11 @@ export function AnnouncementPanel({
       <p className="text-muted">
         Ligne {lineNumber} — {lineName}
       </p>
-      
+      <p className="text-sm text-muted">
+        L&apos;annonce met la radio en pause pour tous les passagers, puis la
+        reprend automatiquement à la fin.
+      </p>
+
       {message && (
         <div className="rounded-md bg-primary-light p-3 text-center text-sm font-medium text-primary">
           {message}
@@ -78,7 +69,7 @@ export function AnnouncementPanel({
             <div>
               <p className="font-semibold text-ink">{stop.name}</p>
               <p className="text-xs text-muted">
-                {pending === stop.id ? "Annonce en cours..." : "Annoncer"}
+                {pending === stop.id ? "Diffusion en cours..." : "Annoncer"}
               </p>
             </div>
           </button>
