@@ -9,6 +9,10 @@ import React, {
   useState,
 } from "react";
 import { fadeInAudio, fadeOutAudio } from "@/lib/audio-fade";
+import {
+  readStoredVolume,
+  writeStoredVolume,
+} from "@/lib/radio-preferences";
 
 type SyncedRadioState = {
   trackIndex: number;
@@ -29,6 +33,8 @@ type LiveAnnouncementPayload = {
 interface AudioContextType {
   isPlaying: boolean;
   currentTrackTitle: string | null;
+  playbackCurrent: number;
+  playbackDuration: number;
   volume: number;
   setVolume: (vol: number) => void;
   playRadio: () => void;
@@ -56,7 +62,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [currentTrackTitle, setCurrentTrackTitle] = useState<string | null>(
     null
   );
-  const [volume, setVolume] = useState(0.5);
+  const [volume, setVolumeState] = useState(() => readStoredVolume(0.5));
+  const [playbackCurrent, setPlaybackCurrent] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
 
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const announcementRef = useRef<HTMLAudioElement | null>(null);
@@ -77,6 +85,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const volumeRef = useRef(volume);
   volumeRef.current = volume;
   const syncWithServerRef = useRef<() => Promise<void>>(async () => {});
+
+  const setVolume = useCallback((vol: number) => {
+    const clamped = Math.min(1, Math.max(0, vol));
+    setVolumeState(clamped);
+    writeStoredVolume(clamped);
+  }, []);
+
+  const updatePlaybackProgress = useCallback(() => {
+    const music = musicRef.current;
+    if (!music) return;
+
+    setPlaybackCurrent(music.currentTime || 0);
+
+    if (music.duration && Number.isFinite(music.duration)) {
+      setPlaybackDuration(music.duration);
+    }
+  }, []);
 
   useEffect(() => {
     const music = musicRef.current;
@@ -253,6 +278,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       music.currentTime = state.position;
     }
 
+    updatePlaybackProgress();
+
     if (music.paused) {
       const useFadeIn =
         shouldFadeInRef.current || musicPausedForAnnouncementRef.current;
@@ -284,7 +311,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       music.volume = volumeRef.current;
       setIsPlaying(true);
     }
-  }, [pauseMusicWithFade]);
+  }, [pauseMusicWithFade, updatePlaybackProgress]);
 
   const syncWithServer = useCallback(async () => {
     if (syncInFlightRef.current || isFadingRef.current) return;
@@ -315,14 +342,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   syncWithServerRef.current = syncWithServer;
 
   useEffect(() => {
-    if (!musicRef.current) {
-      const audio = new Audio();
-      audio.preload = "auto";
-      musicRef.current = audio;
+    let music = musicRef.current;
 
-      audio.addEventListener("ended", () => {
+    if (!music) {
+      music = new Audio();
+      music.preload = "auto";
+      musicRef.current = music;
+
+      music.addEventListener("ended", () => {
         void syncWithServer();
       });
+
+      music.addEventListener("timeupdate", updatePlaybackProgress);
+      music.addEventListener("loadedmetadata", updatePlaybackProgress);
+      music.addEventListener("durationchange", updatePlaybackProgress);
     }
 
     if (!announcementRef.current) {
@@ -352,7 +385,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       clearInterval(syncInterval);
       clearInterval(announcementInterval);
     };
-  }, [syncWithServer, pollAnnouncements]);
+  }, [syncWithServer, pollAnnouncements, updatePlaybackProgress]);
 
   const playRadio = useCallback(async () => {
     userWantsRadioRef.current = true;
@@ -367,9 +400,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const music = musicRef.current;
     if (music) {
       music.pause();
+      updatePlaybackProgress();
     }
     setIsPlaying(false);
-  }, []);
+  }, [updatePlaybackProgress]);
 
   const playAnnouncement = useCallback(
     (audioUrl: string, _label: string) => {
@@ -389,6 +423,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       value={{
         isPlaying,
         currentTrackTitle,
+        playbackCurrent,
+        playbackDuration,
         volume,
         setVolume,
         playRadio,
