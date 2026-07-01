@@ -35,7 +35,7 @@ export default async function RootLayout({
         <AudioProvider>
           <TransportBackground />
           <Navbar user={user} />
-          <main className="relative z-10 min-h-screen bg-transparent pb-28 pl-56">
+          <main className="relative z-10 min-h-screen bg-transparent pt-8 pb-28 pl-56">
             {children}
           </main>
           <RadioPlayer />
