@@ -1,71 +1,43 @@
-import fs from "fs";
-import path from "path";
 import { prisma } from "@/lib/prisma";
+import {
+  advanceTrackPosition,
+  durationsToRecord,
+  ensureTrackDurations,
+  getMusicTracks,
+} from "@/lib/track-durations";
 
 export const RADIO_STATE_ID = "default-radio-state";
-export const DEFAULT_TRACK_DURATION = 180;
 
 export type ComputedRadioState = {
   trackIndex: number;
   position: number;
   track: string | null;
   tracks: string[];
+  trackDurations: Record<string, number>;
   isPlaying: boolean;
   revision: number;
 };
 
-export function getMusicTracks(): string[] {
-  const musicDir = path.join(process.cwd(), "public", "audio", "music");
-  if (!fs.existsSync(musicDir)) return [];
-
-  return fs
-    .readdirSync(musicDir)
-    .filter((file) => file.endsWith(".mp3") && file !== ".gitkeep")
-    .sort((a, b) => a.localeCompare(b, "fr"));
-}
-
-export function getTrackDuration(): number {
-  return DEFAULT_TRACK_DURATION;
-}
-
-function advanceTrack(
-  trackIndex: number,
-  position: number,
-  totalTracks: number,
-  duration: number
-) {
-  let idx = trackIndex;
-  let pos = position;
-
-  while (totalTracks > 0 && pos >= duration) {
-    pos -= duration;
-    idx = (idx + 1) % totalTracks;
-  }
-
-  return { trackIndex: idx, position: pos };
-}
-
-function computeFromRawState(
+async function computeFromRawState(
   trackIndex: number,
   position: number,
   isPlaying: boolean,
   startedAt: bigint | null,
   tracks: string[]
-): { trackIndex: number; position: number } {
+): Promise<{ trackIndex: number; position: number }> {
   if (tracks.length === 0) {
     return { trackIndex: 0, position: 0 };
   }
 
-  const idx = trackIndex % tracks.length;
+  const durations = await ensureTrackDurations();
   let pos = position;
-  const duration = getTrackDuration();
 
   if (isPlaying && startedAt != null) {
     const elapsed = (Date.now() - Number(startedAt)) / 1000;
     pos += elapsed;
   }
 
-  return advanceTrack(idx, pos, tracks.length, duration);
+  return advanceTrackPosition(trackIndex, pos, tracks, durations);
 }
 
 export async function ensureRadioState() {
@@ -90,6 +62,7 @@ export async function ensureRadioState() {
 
 export async function getComputedRadioState(): Promise<ComputedRadioState> {
   const tracks = getMusicTracks();
+  const durations = await ensureTrackDurations();
   const state = await ensureRadioState();
 
   if (tracks.length === 0) {
@@ -98,12 +71,13 @@ export async function getComputedRadioState(): Promise<ComputedRadioState> {
       position: 0,
       track: null,
       tracks,
+      trackDurations: {},
       isPlaying: false,
       revision: state.lastSync.getTime(),
     };
   }
 
-  const computed = computeFromRawState(
+  const computed = await computeFromRawState(
     state.trackIndex,
     state.position,
     state.isPlaying,
@@ -116,37 +90,16 @@ export async function getComputedRadioState(): Promise<ComputedRadioState> {
     position: computed.position,
     track: tracks[computed.trackIndex] ?? null,
     tracks,
+    trackDurations: durationsToRecord(durations),
     isPlaying: state.isPlaying,
     revision: state.lastSync.getTime(),
   };
 }
 
-export async function persistComputedState() {
-  const tracks = getMusicTracks();
-  const state = await ensureRadioState();
-  const computed = computeFromRawState(
-    state.trackIndex,
-    state.position,
-    state.isPlaying,
-    state.startedAt,
-    tracks
-  );
-
-  await prisma.radioState.update({
-    where: { id: RADIO_STATE_ID },
-    data: {
-      trackIndex: computed.trackIndex,
-      position: computed.position,
-      startedAt: state.isPlaying ? BigInt(Date.now()) : null,
-      lastSync: new Date(),
-    },
-  });
-}
-
 export async function pauseRadioForAnnouncement() {
   const tracks = getMusicTracks();
   const state = await ensureRadioState();
-  const computed = computeFromRawState(
+  const computed = await computeFromRawState(
     state.trackIndex,
     state.position,
     state.isPlaying,
@@ -230,3 +183,5 @@ export async function recoverStuckRadio() {
     await resumeRadioAfterAnnouncement();
   }
 }
+
+export { getMusicTracks, invalidateTrackDurationsCache } from "@/lib/track-durations";

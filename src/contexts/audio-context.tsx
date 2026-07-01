@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { fadeInAudio, fadeOutAudio } from "@/lib/audio-fade";
 
 type SyncedRadioState = {
   trackIndex: number;
@@ -40,6 +41,7 @@ const AudioContext = createContext<AudioContextType | null>(null);
 const SYNC_INTERVAL_MS = 2000;
 const ANNOUNCEMENT_POLL_MS = 1500;
 const DRIFT_THRESHOLD_S = 1.5;
+const FADE_MS = 500;
 
 function trackTitle(filename: string | null) {
   return filename ? filename.replace(/\.mp3$/i, "") : null;
@@ -63,6 +65,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const userWantsRadioRef = useRef(false);
   const lastRevisionRef = useRef<number | null>(null);
   const syncInFlightRef = useRef(false);
+  const isFadingRef = useRef(false);
+  const shouldFadeInRef = useRef(false);
+  const musicPausedForAnnouncementRef = useRef(false);
 
   const announcementQueueRef = useRef<LiveAnnouncementPayload[]>([]);
   const playedAnnouncementIdsRef = useRef<Set<string>>(new Set());
@@ -74,10 +79,32 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const syncWithServerRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
-    if (musicRef.current) musicRef.current.volume = volume;
-    if (announcementRef.current) announcementRef.current.volume = volume;
-    if (chimeRef.current) chimeRef.current.volume = volume;
+    const music = musicRef.current;
+    const announcement = announcementRef.current;
+    const chime = chimeRef.current;
+
+    if (music && !isFadingRef.current && !isPlayingAnnouncementRef.current) {
+      music.volume = volume;
+    }
+    if (announcement) announcement.volume = volume;
+    if (chime) chime.volume = volume;
   }, [volume]);
+
+  const pauseMusicWithFade = useCallback(async () => {
+    const music = musicRef.current;
+    if (!music || music.paused || !music.src) return;
+
+    if (isFadingRef.current) return;
+
+    isFadingRef.current = true;
+    musicPausedForAnnouncementRef.current = true;
+
+    try {
+      await fadeOutAudio(music, FADE_MS);
+    } finally {
+      isFadingRef.current = false;
+    }
+  }, []);
 
   const playAnnouncementSequence = useCallback(
     (audioUrl: string) =>
@@ -89,22 +116,37 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const playAnnouncementAudio = () => {
+        const playAnnouncementAudio = async () => {
           announcement.src = audioUrl;
-          announcement.volume = volumeRef.current;
-          announcement.onended = () => resolve();
-          announcement.play().catch(() => resolve());
+          announcement.volume = 0;
+
+          try {
+            await announcement.play();
+            await fadeInAudio(announcement, volumeRef.current, FADE_MS);
+          } catch {
+            resolve();
+            return;
+          }
+
+          announcement.onended = async () => {
+            await fadeOutAudio(announcement, FADE_MS);
+            resolve();
+          };
         };
 
         if (!chime) {
-          playAnnouncementAudio();
+          void playAnnouncementAudio();
           return;
         }
 
         chime.src = "/audio/sfx/chime.mp3";
         chime.volume = volumeRef.current;
-        chime.onended = playAnnouncementAudio;
-        chime.play().catch(playAnnouncementAudio);
+        chime.onended = () => {
+          void playAnnouncementAudio();
+        };
+        chime.play().catch(() => {
+          void playAnnouncementAudio();
+        });
       }),
     []
   );
@@ -118,6 +160,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isPlayingAnnouncementRef.current = true;
 
     try {
+      await pauseMusicWithFade();
       await playAnnouncementSequence(next.audioUrl);
 
       if (!next.id.startsWith("local-")) {
@@ -131,13 +174,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.error("[Announcement queue error]:", error);
     } finally {
       isPlayingAnnouncementRef.current = false;
+
       if (announcementQueueRef.current.length > 0) {
         void processAnnouncementQueue();
       } else {
+        shouldFadeInRef.current = true;
         void syncWithServerRef.current();
       }
     }
-  }, [playAnnouncementSequence]);
+  }, [pauseMusicWithFade, playAnnouncementSequence]);
 
   const pollAnnouncements = useCallback(async () => {
     try {
@@ -168,7 +213,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const applySyncedState = useCallback(async (state: SyncedRadioState) => {
     const music = musicRef.current;
-    if (!music) return;
+    if (!music || isFadingRef.current) return;
 
     if (state.track) {
       setCurrentTrackTitle(trackTitle(state.track));
@@ -184,7 +229,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       announcementQueueRef.current.length > 0;
 
     if (!state.isPlaying || !state.track || announcementActive) {
-      if (!music.paused) {
+      if (!music.paused && music.src) {
+        await pauseMusicWithFade();
+      } else if (!music.paused) {
         music.pause();
       }
       setIsPlaying(false);
@@ -206,9 +253,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       music.currentTime = state.position;
     }
 
-    music.volume = volumeRef.current;
-
     if (music.paused) {
+      const useFadeIn =
+        shouldFadeInRef.current || musicPausedForAnnouncementRef.current;
+
+      shouldFadeInRef.current = false;
+      musicPausedForAnnouncementRef.current = false;
+
+      if (useFadeIn) {
+        isFadingRef.current = true;
+        try {
+          await fadeInAudio(music, volumeRef.current, FADE_MS);
+          setIsPlaying(true);
+        } catch {
+          setIsPlaying(false);
+        } finally {
+          isFadingRef.current = false;
+        }
+        return;
+      }
+
+      music.volume = volumeRef.current;
       try {
         await music.play();
         setIsPlaying(true);
@@ -216,12 +281,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(false);
       }
     } else {
+      music.volume = volumeRef.current;
       setIsPlaying(true);
     }
-  }, []);
+  }, [pauseMusicWithFade]);
 
   const syncWithServer = useCallback(async () => {
-    if (syncInFlightRef.current) return;
+    if (syncInFlightRef.current || isFadingRef.current) return;
     syncInFlightRef.current = true;
 
     try {
@@ -295,6 +361,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const pauseRadio = useCallback(() => {
     userWantsRadioRef.current = false;
+    shouldFadeInRef.current = false;
+    musicPausedForAnnouncementRef.current = false;
+
     const music = musicRef.current;
     if (music) {
       music.pause();
