@@ -70,7 +70,7 @@ export function BrandLogo({
             light ? "text-white" : "text-ink"
           )}
         >
-          Clear
+          ClearGroup
         </span>
         <span
           className={cn(
