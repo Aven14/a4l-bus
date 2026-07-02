@@ -168,7 +168,7 @@ export default async function HomePage() {
 
             </div>
 
-            <div className="rounded-md bg-white p-5 shadow-card">
+            <div className="rounded-md bg-surface p-5 shadow-card">
 
               <p className="text-4xl font-extrabold text-primary">{activeLines.length}</p>
 
@@ -204,7 +204,7 @@ export default async function HomePage() {
 
             >
 
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-white shadow-card">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-surface shadow-card">
 
                 {s.icon}
 
