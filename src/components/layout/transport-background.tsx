@@ -102,11 +102,11 @@ export function TransportBackground() {
 
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
 
-      gradient.addColorStop(0, "#fafbfc");
+      gradient.addColorStop(0, "#e8ecf0");
 
-      gradient.addColorStop(0.5, "#f8fafc");
+      gradient.addColorStop(0.5, "#e2e6ea");
 
-      gradient.addColorStop(1, "#f0f4f8");
+      gradient.addColorStop(1, "#d8dce0");
 
       ctx.fillStyle = gradient;
 

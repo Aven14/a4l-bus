@@ -85,7 +85,7 @@ export function Navbar({ user }: { user: NavUser | null }) {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-56 flex-col border-r border-line/70 bg-surface/95 shadow-elevated backdrop-blur-md">
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-56 flex-col border-r border-line/70 bg-surface/85 shadow-elevated backdrop-blur-md">
       <div className="border-b border-line/70 px-4 py-4">
         <Link
           href="/"
