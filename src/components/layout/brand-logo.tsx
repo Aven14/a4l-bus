@@ -10,13 +10,26 @@ function LogoMark({ className }: { className?: string }) {
       aria-hidden
     >
       <svg viewBox="0 0 24 24" className="h-[55%] w-[55%] max-h-6 max-w-6" fill="none">
+        {/* Bus stylisé */}
         <path
-          d="M4 6h16M4 12h12M4 18h16"
-          stroke="white"
-          strokeWidth="2.5"
-          strokeLinecap="round"
+          d="M4 7h16c0.55 0 1 0.45 1 1v8c0 0.55-0.45 1-1 1h-1c-0.55 0-1-0.45-1-1v-1H6v1c0 0.55-0.45 1-1 1H4c-0.55 0-1-0.45-1-1V8c0-0.55 0.45-1 1-1z"
+          fill="white"
         />
-        <circle cx="18" cy="18" r="3" fill="#dc2626" />
+        {/* Fenêtres du bus */}
+        <rect x="6" y="9" width="3" height="2" rx="0.5" fill="#194A78" />
+        <rect x="10.5" y="9" width="3" height="2" rx="0.5" fill="#194A78" />
+        <rect x="15" y="9" width="3" height="2" rx="0.5" fill="#194A78" />
+        {/* Roues */}
+        <circle cx="7" cy="17" r="1.5" fill="#26BBDC" />
+        <circle cx="17" cy="17" r="1.5" fill="#26BBDC" />
+        {/* Ligne de trajet */}
+        <path
+          d="M2 5c2 0 3 1 5 1s3-1 5-1 3 1 5 1"
+          stroke="#26BBDC"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          opacity="0.8"
+        />
       </svg>
     </div>
   );
