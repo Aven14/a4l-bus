@@ -36,7 +36,9 @@ export default async function RootLayout({
           <TransportBackground />
           <Navbar user={user} />
           <main className="relative z-10 min-h-screen bg-transparent pt-8 pb-28 pl-56">
-            {children}
+            <div className="panel mx-auto max-w-6xl px-4 py-6">
+              {children}
+            </div>
           </main>
           <RadioPlayer />
         </AudioProvider>
