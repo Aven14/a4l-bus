@@ -4,9 +4,9 @@
 
 @theme inline {
 
-  --color-canvas: #f3f4f6;
+  --color-canvas: #f4f7fc;
 
-  --color-surface: #e5e7eb;
+  --color-surface: #ffffff;
 
   --color-ink: #0f172a;
 
@@ -176,7 +176,7 @@ body {
 
 .panel-highlight {
 
-  background: linear-gradient(165deg, #e5e7eb 0%, #d1d5db 55%, #e5e7eb 100%);
+  background: linear-gradient(165deg, #ffffff  0%, #f8fafc  55%, #eff6ff  100%);
 
   border: none;
 

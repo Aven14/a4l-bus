@@ -97,7 +97,7 @@ export function LiveTrackingClient({ initialData }: LiveTrackingClientProps) {
                       isCurrent
                         ? "bg-primary text-white scale-110 shadow-elevated"
                         : isPassed
-                        ? "bg-gray-200 text-gray-500"
+                        ? "bg-surface text-muted"
                         : "bg-primary-light text-primary"
                     }`}
                   >
