@@ -83,7 +83,7 @@ export default async function HomePage() {
                 ligne{lineCount !== 1 ? "s" : ""} au réseau
               </p>
             </div>
-            <div className="rounded-md bg-white p-5 shadow-card">
+            <div className="rounded-md bg-surface p-5 shadow-card">
               <p className="text-4xl font-extrabold text-primary">{activeLines.length}</p>
               <p className="mt-1 text-sm text-muted">
                 ligne{activeLines.length !== 1 ? "s" : ""} en service
@@ -101,7 +101,7 @@ export default async function HomePage() {
               key={s.title}
               className={`panel-soft bg-gradient-to-br p-6 ${s.color}`}
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-white shadow-card">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-surface shadow-card">
                 {s.icon}
               </div>
               <h3 className="font-bold text-ink">{s.title}</h3>
