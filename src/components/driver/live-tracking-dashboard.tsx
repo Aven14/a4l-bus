@@ -117,7 +117,7 @@ export function LiveTrackingDashboard({
                         : isDestination
                         ? "bg-accent text-white scale-110 shadow-elevated"
                         : isPassed
-                        ? "bg-surface text-muted"
+                        ? "bg-gray-200 text-gray-500"
                         : "bg-primary-light text-primary"
                     }`}
                   >

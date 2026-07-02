@@ -22,11 +22,11 @@ export function RadioPlayer() {
   const volumePercent = Math.round(volume * 100);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[min(100vw-2rem,22rem)] rounded-lg border border-line bg-surface/95 p-4 shadow-xl backdrop-blur-sm">
+    <div className="fixed bottom-4 right-4 z-50 w-[min(100vw-2rem,22rem)] rounded-lg border border-gray-700 bg-gray-900/90 p-4 shadow-xl backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <button
           onClick={isPlaying ? pauseRadio : playRadio}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary transition-colors hover:bg-primary-dark"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 transition-colors hover:bg-blue-700"
           aria-label={isPlaying ? "Mettre en pause" : "Lancer la radio"}
         >
           {isPlaying ? (
@@ -41,10 +41,10 @@ export function RadioPlayer() {
         </button>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-ink">
+          <p className="truncate text-sm font-medium text-white">
             {currentTrackTitle || "Radio ClearBus"}
           </p>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-gray-400">
             {isPlaying ? "Synchronisé" : "Appuyez pour écouter"}
           </p>
         </div>
@@ -52,7 +52,7 @@ export function RadioPlayer() {
 
       <div className="mt-3 space-y-1">
         <div
-          className="h-1.5 overflow-hidden rounded-full bg-line"
+          className="h-1.5 overflow-hidden rounded-full bg-gray-700"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
@@ -60,11 +60,11 @@ export function RadioPlayer() {
           aria-label="Progression du morceau"
         >
           <div
-            className="h-full rounded-full bg-primary transition-[width] duration-300 ease-linear"
+            className="h-full rounded-full bg-blue-500 transition-[width] duration-300 ease-linear"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="flex justify-between text-[11px] tabular-nums text-muted">
+        <div className="flex justify-between text-[11px] tabular-nums text-gray-400">
           <span>{formatPlaybackTime(playbackCurrent)}</span>
           <span>{formatPlaybackTime(playbackDuration)}</span>
         </div>
@@ -72,7 +72,7 @@ export function RadioPlayer() {
 
       <div className="mt-3 flex items-center gap-3">
         <svg
-          className="h-4 w-4 shrink-0 text-muted"
+          className="h-4 w-4 shrink-0 text-gray-400"
           fill="currentColor"
           viewBox="0 0 24 24"
           aria-hidden
@@ -86,13 +86,13 @@ export function RadioPlayer() {
           step="1"
           value={volumePercent}
           onChange={(e) => setVolume(parseInt(e.target.value, 10) / 100)}
-          className="h-2 w-full min-w-0 flex-1 cursor-pointer accent-primary"
+          className="h-2 w-full min-w-0 flex-1 cursor-pointer accent-blue-600"
           aria-label="Volume"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={volumePercent}
         />
-        <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted">
+        <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-300">
           {volumePercent}%
         </span>
       </div>
