@@ -65,7 +65,7 @@ export function BanPassengerForm() {
           className="input-field sm:col-span-2 lg:col-span-1"
           placeholder="Motif (optionnel)"
         />
-        <button type="submit" disabled={pending} className="btn-danger sm:col-span-2 lg:col-span-1">
+        <button type="submit" disabled={pending} className="btn-danger sm:col-span-2 lg:col-span-1 opacity-90 hover:opacity-100">
           {pending ? "..." : "Bannir des bus"}
         </button>
       </form>

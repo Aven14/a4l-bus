@@ -83,7 +83,7 @@ export function BannedList({ initialBans }: { initialBans: BanRow[] }) {
                     <button
                       onClick={() => handleUnban(ban.id)}
                       disabled={pending}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 transition"
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600/90 rounded-md hover:bg-red-700 disabled:opacity-50 transition"
                     >
                       Débannir
                     </button>

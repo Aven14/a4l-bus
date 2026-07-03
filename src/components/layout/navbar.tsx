@@ -150,7 +150,7 @@ export function Navbar({ user }: { user: NavUser | null }) {
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full rounded-md bg-red-600 px-3 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-red-700"
+              className="w-full rounded-md bg-red-600/90 px-3 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-red-700"
             >
               Déconnexion
             </button>
