@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { getActiveBans, type BanRow } from "@/actions/bans";
+import { getActiveBans, liftBan, type BanRow } from "@/actions/bans";
 import { formatDate } from "@/lib/utils";
 
 export function BannedList({ initialBans }: { initialBans: BanRow[] }) {
@@ -20,6 +20,15 @@ export function BannedList({ initialBans }: { initialBans: BanRow[] }) {
     setQuery("");
     startTransition(async () => {
       setBans(await getActiveBans());
+    });
+  };
+
+  const handleUnban = (banId: string) => {
+    startTransition(async () => {
+      const result = await liftBan(banId);
+      if (result.success) {
+        setBans(bans.filter((b) => b.id !== banId));
+      }
     });
   };
 
@@ -52,6 +61,7 @@ export function BannedList({ initialBans }: { initialBans: BanRow[] }) {
                 <th className="px-4 py-3 font-semibold text-muted">Motif</th>
                 <th className="px-4 py-3 font-semibold text-muted">Banni le</th>
                 <th className="px-4 py-3 font-semibold text-muted">Par</th>
+                <th className="px-4 py-3 font-semibold text-muted">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -68,6 +78,15 @@ export function BannedList({ initialBans }: { initialBans: BanRow[] }) {
                   </td>
                   <td className="px-4 py-3 text-muted">
                     {ban.bannedBy.firstname} {ban.bannedBy.lastname}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleUnban(ban.id)}
+                      disabled={pending}
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 transition"
+                    >
+                      Débannir
+                    </button>
                   </td>
                 </tr>
               ))}
